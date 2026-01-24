@@ -64,3 +64,53 @@ class ExecutionContext(BaseModel):
     trace_id: str
     secrets_map: Dict[str, str]  # Decrypted secrets passed from Vault
     tool_registry: Any  # Interface for coreason-mcp (The Tools)
+
+
+class NodeStarted(BaseModel):
+    """
+    Event payload for when a node starts execution.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    node_id: str
+    timestamp: float
+    status: Literal["RUNNING"] = "RUNNING"
+    visual_cue: str = "PULSE"
+
+
+class NodeCompleted(BaseModel):
+    """
+    Event payload for when a node completes execution.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    node_id: str
+    output_summary: str
+    status: Literal["SUCCESS"] = "SUCCESS"
+    visual_cue: str = "GREEN_GLOW"
+
+
+class EdgeTraversed(BaseModel):
+    """
+    Event payload for when an edge is traversed.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    source: str
+    target: str
+    animation_speed: str = "FAST"
+
+
+class ArtifactGenerated(BaseModel):
+    """
+    Event payload for when an artifact is generated.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    node_id: str
+    artifact_type: str = "PDF"
+    url: str
