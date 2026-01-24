@@ -1,0 +1,16 @@
+fastapi
+uvicorn[standard]
+redis
+sse-starlette
+pydantic-settings
+coreason-cortex
+coreason-identity
+coreason-veritas
+coreason-vault
+coreason-maco
+coreason-manifest
+coreason-foundry
+coreason-graph-nexus
+loguru
+pydantic
+anyio
