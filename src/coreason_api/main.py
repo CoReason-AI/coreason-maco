@@ -3,14 +3,16 @@ from typing import AsyncGenerator
 
 from fastapi import FastAPI
 
+from coreason_api.utils.logger import logger
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Startup
-    print("Starting up...")
+    logger.info("Starting up...")
     yield
     # Shutdown
-    print("Shutting down...")
+    logger.info("Shutting down...")
 
 
 app = FastAPI(
