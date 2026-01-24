@@ -69,15 +69,25 @@ class WorkflowRunner:
         # Start execution in background
         producer = asyncio.create_task(_execution_task())
 
-        # Consumer loop
-        while True:
-            event = await event_queue.get()
-            if event is None:
-                break
-            yield event
-
-        # Propagate any exceptions from the producer
-        await producer
+        try:
+            # Consumer loop
+            while True:
+                event = await event_queue.get()
+                if event is None:
+                    break
+                yield event
+        except (GeneratorExit, Exception):
+            # If the consumer stops iterating or crashes, cancel the producer
+            producer.cancel()
+            try:
+                await producer
+            except asyncio.CancelledError:
+                pass
+            raise
+        finally:
+            # Propagate any exceptions from the producer (if it wasn't cancelled)
+            if not producer.cancelled():
+                await producer
 
     async def _execute_node(
         self,
