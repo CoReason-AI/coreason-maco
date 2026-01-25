@@ -9,7 +9,6 @@
 # Source Code: https://github.com/CoReason-AI/coreason_maco
 
 import asyncio
-import re
 import time
 import traceback
 import uuid
@@ -17,10 +16,16 @@ from typing import Any, AsyncGenerator, Dict, Set
 
 import networkx as nx
 
-from coreason_maco.core.interfaces import AgentExecutor, ToolExecutor
+from coreason_maco.engine.handlers import (
+    CouncilNodeHandler,
+    DefaultNodeHandler,
+    LLMNodeHandler,
+    NodeHandler,
+    ToolNodeHandler,
+)
+from coreason_maco.engine.resolver import VariableResolver
 from coreason_maco.engine.topology import TopologyEngine
 from coreason_maco.events.protocol import (
-    CouncilVotePayload,
     ExecutionContext,
     GraphEvent,
     NodeCompleted,
@@ -28,7 +33,6 @@ from coreason_maco.events.protocol import (
     NodeStarted,
     WorkflowErrorPayload,
 )
-from coreason_maco.strategies.council import CouncilConfig, CouncilStrategy
 
 
 class WorkflowRunner:
@@ -38,6 +42,13 @@ class WorkflowRunner:
 
     def __init__(self, topology: TopologyEngine | None = None) -> None:
         self.topology = topology or TopologyEngine()
+        self.resolver = VariableResolver()
+        self.handlers: Dict[str, NodeHandler] = {
+            "TOOL": ToolNodeHandler(),
+            "LLM": LLMNodeHandler(),
+            "COUNCIL": CouncilNodeHandler(),
+        }
+        self.default_handler = DefaultNodeHandler()
 
     async def run_workflow(
         self, recipe: nx.DiGraph, context: ExecutionContext, resume_snapshot: Dict[str, Any] | None = None
@@ -188,33 +199,6 @@ class WorkflowRunner:
             if not producer.cancelled():
                 await producer
 
-    def _resolve_config(self, config: Dict[str, Any], node_outputs: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Recursively replaces {{ node_id }} with actual output values.
-        """
-        resolved = config.copy()
-
-        # Simple recursive helper
-        def replace_value(val: Any) -> Any:
-            if isinstance(val, str):
-                # Regex to find {{ some_node_id }}
-                matches = re.findall(r"\{\{\s*([\w\-_]+)\s*\}\}", val)
-                for node_ref in matches:
-                    if node_ref in node_outputs:
-                        # If the string is EXACTLY the template, replace with the raw object (e.g. dict/int)
-                        if val.strip() == f"{{{{ {node_ref} }}}}":
-                            return node_outputs[node_ref]
-                        # Otherwise replace string content
-                        val = val.replace(f"{{{{ {node_ref} }}}}", str(node_outputs[node_ref]))
-                return val
-            elif isinstance(val, dict):
-                return {k: replace_value(v) for k, v in val.items()}
-            elif isinstance(val, list):
-                return [replace_value(v) for v in val]
-            return val
-
-        return replace_value(resolved)  # type: ignore
-
     async def _execute_node(
         self,
         node_id: str,
@@ -247,86 +231,27 @@ class WorkflowRunner:
             await queue.put(start_event)
 
             node_data = recipe.nodes[node_id]
-            node_type = node_data.get("type")
+            node_type = node_data.get("type", "DEFAULT")
             raw_config = node_data.get("config", {})
 
             # 2. Resolve Inputs (Data Injection)
-            config = self._resolve_config(raw_config, node_outputs)
+            config = self.resolver.resolve(raw_config, node_outputs)
 
-            output = None
-
-            if node_type == "TOOL":
-                # Real Tool Execution
-                tool_name = config.get("tool_name")
-                tool_args = config.get("args", {})
-
-                if tool_name:
-                    # We cast to ToolExecutor protocol to satisfy type checker if possible,
-                    # but runtime duck typing works too.
-                    # Assuming context.tool_registry implements execute.
-                    executor: ToolExecutor = context.tool_registry
-                    output = await executor.execute(tool_name, tool_args)
-                else:
-                    # Without a tool name, we can't do anything.
-                    # In strict mode this might be an error.
-                    pass
-
-            elif node_type == "LLM":
-                # Agent Execution
-                model_config = config.copy()
-                # Assuming 'prompt' or 'input' is in config, fallback to args
-                # The manual test uses 'config' directly for model, but AgentExecutor needs a prompt
-                # We assume the prompt is implicit or passed in config
-                prompt = config.get("prompt", config.get("args", {}).get("prompt", "Analyze this."))
-
-                # Allow user to pass prompt directly in config for simple nodes
-                if "prompt" not in config and "args" not in config:
-                    # Fallback: maybe the upstream output IS the prompt?
-                    # For now, we use a default if not found
-                    pass
-
-                agent_executor: AgentExecutor = context.agent_executor
-                result = await agent_executor.invoke(prompt, model_config)
-                output = result.content
-
-            elif node_type == "COUNCIL":
-                # Council Execution
-                # Copy config to avoid modifying the graph
-                c_config = config.copy()
-                prompt = c_config.pop("prompt", "Please analyze.")
-                council_config = CouncilConfig(**c_config)
-
-                agent_executor = context.agent_executor
-                strategy = CouncilStrategy(agent_executor)
-
-                council_result = await strategy.execute(prompt, council_config)
-                output = council_result.consensus
-
-                vote_payload = CouncilVotePayload(
-                    node_id=node_id,
-                    votes=council_result.individual_votes,
-                )
-                vote_event = GraphEvent(
-                    event_type="COUNCIL_VOTE",
-                    run_id=run_id,
-                    node_id=node_id,
-                    timestamp=time.time(),
-                    payload=vote_payload.model_dump(),
-                    visual_metadata={"widget": "VOTING_BOOTH"},
-                )
-                await queue.put(vote_event)
-            else:
-                # Fallback / Mock
-                # Simulate work
-                await asyncio.sleep(0.01)
-                # In a real scenario, this comes from the tool/agent execution
-                # For testing, we look for 'mock_output' in node attributes
-                output = node_data.get("mock_output", None)
+            # 3. Delegate to Handler
+            handler = self.handlers.get(node_type, self.default_handler)
+            output = await handler.execute(
+                node_id=node_id,
+                run_id=run_id,
+                config=config,
+                context=context,
+                queue=queue,
+                node_attributes=node_data,
+            )
 
             # Store output for routing
             node_outputs[node_id] = output
 
-            # 2. Emit NODE_DONE
+            # 4. Emit NODE_DONE
             end_payload = NodeCompleted(
                 node_id=node_id,
                 output_summary=str(output) if output is not None else "Completed",
