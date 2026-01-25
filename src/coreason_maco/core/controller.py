@@ -28,16 +28,18 @@ class WorkflowController:
         services: ServiceRegistry,
         topology: TopologyEngine | None = None,
         runner: WorkflowRunner | None = None,
+        max_parallel_agents: int = 10,
     ) -> None:
         """
         Args:
             services: The service registry containing dependencies.
             topology: Optional TopologyEngine instance (for testing).
             runner: Optional WorkflowRunner instance (for testing).
+            max_parallel_agents: Maximum number of concurrent agents.
         """
         self.services = services
         self.topology = topology or TopologyEngine()
-        self.runner = runner or WorkflowRunner(topology=self.topology)
+        self.runner = runner or WorkflowRunner(topology=self.topology, max_parallel_agents=max_parallel_agents)
 
     async def execute_recipe(
         self, manifest: Dict[str, Any], inputs: Dict[str, Any]

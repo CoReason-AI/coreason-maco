@@ -22,7 +22,7 @@ def mock_context() -> ExecutionContext:
 @pytest.mark.asyncio  # type: ignore
 async def test_conditional_edge_events(mock_context: ExecutionContext) -> None:
     """
-    Test that only the activated edge emits an EDGE_TRAVERSAL event.
+    Test that only the activated edge emits an EDGE_ACTIVE event.
     Graph: A -> B (cond="yes"), A -> C (cond="no")
     Output of A: "yes"
     Expected: Edge A->B traversed. Edge A->C NOT traversed.
@@ -41,7 +41,7 @@ async def test_conditional_edge_events(mock_context: ExecutionContext) -> None:
     async for event in runner.run_workflow(graph, mock_context):
         events.append(event)
 
-    edge_events = [e for e in events if e.event_type == "EDGE_TRAVERSAL"]
+    edge_events = [e for e in events if e.event_type == "EDGE_ACTIVE"]
 
     # Only A->B should be present
     assert len(edge_events) == 1
@@ -75,7 +75,7 @@ async def test_broadcast_edge_events(mock_context: ExecutionContext) -> None:
     async for event in runner.run_workflow(graph, mock_context):
         events.append(event)
 
-    edge_events = [e for e in events if e.event_type == "EDGE_TRAVERSAL"]
+    edge_events = [e for e in events if e.event_type == "EDGE_ACTIVE"]
 
     assert len(edge_events) == 2
 
@@ -103,7 +103,7 @@ async def test_no_edge_activation(mock_context: ExecutionContext) -> None:
     async for event in runner.run_workflow(graph, mock_context):
         events.append(event)
 
-    edge_events = [e for e in events if e.event_type == "EDGE_TRAVERSAL"]
+    edge_events = [e for e in events if e.event_type == "EDGE_ACTIVE"]
 
     assert len(edge_events) == 0
 

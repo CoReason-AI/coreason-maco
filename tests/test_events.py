@@ -97,7 +97,7 @@ def test_payload_helpers() -> None:
 def test_graph_event_sequence_id() -> None:
     """Test sequence_id optionality."""
     event = GraphEvent(
-        event_type="EDGE_TRAVERSAL",
+        event_type="EDGE_ACTIVE",
         run_id="run-1",
         trace_id="trace-1",
         node_id="node-X",
@@ -109,7 +109,7 @@ def test_graph_event_sequence_id() -> None:
     assert event.sequence_id == 10
 
     event_no_seq = GraphEvent(
-        event_type="EDGE_TRAVERSAL",
+        event_type="EDGE_ACTIVE",
         run_id="run-1",
         trace_id="trace-1",
         node_id="node-X",
