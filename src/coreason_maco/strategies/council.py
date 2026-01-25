@@ -36,7 +36,7 @@ class CouncilResult(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     consensus: str
-    individual_votes: List[str]
+    individual_votes: Dict[str, str]
 
 
 class CouncilStrategy:
@@ -66,23 +66,27 @@ class CouncilStrategy:
         # Execute in parallel
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
-        valid_votes: List[str] = []
-        for result in results:
+        valid_votes: Dict[str, str] = {}
+        valid_votes_list: List[str] = []
+
+        for i, result in enumerate(results):
+            model_name = config.agents[i].get("model", f"agent-{i}")
             if isinstance(result, BaseException):
                 # In a real system, we'd log this.
                 # For now, we just skip the failed vote.
                 continue
 
             # AgentExecutor returns AgentResponse protocol which has .content
-            valid_votes.append(result.content)
+            valid_votes[model_name] = result.content
+            valid_votes_list.append(result.content)
 
         if not valid_votes:
             raise RuntimeError("All council agents failed or timed out.")
 
         # Reduce Phase: Synthesize consensus
         synthesis_prompt = f"Original Query: {prompt}\n\n---\n\n"
-        for i, vote in enumerate(valid_votes):
-            synthesis_prompt += f"Model {i + 1} Response:\n{vote}\n\n---\n\n"
+        for model, vote in valid_votes.items():
+            synthesis_prompt += f"Model {model} Response:\n{vote}\n\n---\n\n"
 
         synthesis_prompt += (
             "Review the above responses. Identify points of agreement and disagreement. "

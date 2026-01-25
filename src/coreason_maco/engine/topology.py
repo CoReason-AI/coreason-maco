@@ -48,7 +48,7 @@ class TopologyEngine:
         for node in manifest.nodes:
             # Store node attributes
             # id is used as the node key
-            graph.add_node(node.id, type=node.type, **node.config)
+            graph.add_node(node.id, type=node.type, config=node.config)
 
         for edge in manifest.edges:
             edge_attrs = {}

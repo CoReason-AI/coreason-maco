@@ -146,5 +146,6 @@ def test_execution_context_strictness() -> None:
             trace_id="t1",
             secrets_map={"key": 123},  # type: ignore[dict-item]
             tool_registry={},
+            agent_executor={},
         )
     assert "Input should be a valid string" in str(exc.value)

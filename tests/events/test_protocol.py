@@ -91,6 +91,7 @@ def test_execution_context_valid() -> None:
         trace_id="trace-1",
         secrets_map={"API_KEY": "secret"},
         tool_registry={"some": "tool"},
+        agent_executor={},
     )
     assert ctx.user_id == "user-1"
     assert ctx.secrets_map["API_KEY"] == "secret"
