@@ -9,15 +9,11 @@
 # Source Code: https://github.com/CoReason-AI/coreason_maco
 
 import asyncio
-import time
 from typing import Any, Dict, Protocol
 
 from coreason_maco.core.interfaces import AgentExecutor, ToolExecutor
-from coreason_maco.events.protocol import (
-    CouncilVotePayload,
-    ExecutionContext,
-    GraphEvent,
-)
+from coreason_maco.events.factory import EventFactory
+from coreason_maco.events.protocol import ExecutionContext, GraphEvent
 from coreason_maco.strategies.council import CouncilConfig, CouncilStrategy
 
 
@@ -112,19 +108,7 @@ class CouncilNodeHandler:
 
         result = await strategy.execute(prompt, council_config)
 
-        vote_payload = CouncilVotePayload(
-            node_id=node_id,
-            votes=result.individual_votes,
-        )
-        vote_event = GraphEvent(
-            event_type="COUNCIL_VOTE",
-            run_id=run_id,
-            node_id=node_id,
-            timestamp=time.time(),
-            payload=vote_payload.model_dump(),
-            visual_metadata={"widget": "VOTING_BOOTH"},
-        )
-        await queue.put(vote_event)
+        await queue.put(EventFactory.create_council_vote(run_id, node_id, result.individual_votes))
 
         return result.consensus
 
