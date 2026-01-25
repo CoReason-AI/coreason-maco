@@ -11,6 +11,25 @@
 from typing import Any, Protocol
 
 
+class AgentResponse(Protocol):
+    """
+    Response from an agent execution.
+    """
+
+    content: str
+    metadata: dict[str, Any]
+
+
+class AgentExecutor(Protocol):
+    """
+    Interface for the agent executor (coreason-cortex).
+    """
+
+    async def invoke(self, prompt: str, model_config: dict[str, Any]) -> AgentResponse:
+        """Invokes an agent."""
+        ...
+
+
 class ToolRegistry(Protocol):
     """
     Interface for the tool registry (coreason-mcp).
