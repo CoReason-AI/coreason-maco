@@ -12,6 +12,8 @@ from typing import List
 
 import networkx as nx
 
+from coreason_maco.core.manifest import RecipeManifest
+
 
 class CyclicDependencyError(Exception):
     """Raised when the graph contains a cycle."""
@@ -29,6 +31,34 @@ class TopologyEngine:
     """
     Responsible for validating the graph topology and determining execution order.
     """
+
+    def build_graph(self, manifest: RecipeManifest) -> nx.DiGraph:
+        """
+        Builds a NetworkX DiGraph from the RecipeManifest.
+        Validates the graph after building.
+
+        Args:
+            manifest: The RecipeManifest object.
+
+        Returns:
+            A validated NetworkX DiGraph.
+        """
+        graph = nx.DiGraph(name=manifest.name)
+
+        for node in manifest.nodes:
+            # Store node attributes
+            # id is used as the node key
+            graph.add_node(node.id, type=node.type, **node.config)
+
+        for edge in manifest.edges:
+            edge_attrs = {}
+            if edge.condition:
+                edge_attrs["condition"] = edge.condition
+            graph.add_edge(edge.source, edge.target, **edge_attrs)
+
+        self.validate_graph(graph)
+
+        return graph
 
     def validate_graph(self, graph: nx.DiGraph) -> None:
         """
