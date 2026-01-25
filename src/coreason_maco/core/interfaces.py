@@ -8,7 +8,7 @@
 #
 # Source Code: https://github.com/CoReason-AI/coreason_maco
 
-from typing import Any, Protocol
+from typing import Any, AsyncGenerator, Protocol
 
 
 class AgentResponse(Protocol):
@@ -27,6 +27,10 @@ class AgentExecutor(Protocol):
 
     async def invoke(self, prompt: str, model_config: dict[str, Any]) -> AgentResponse:
         """Invokes an agent."""
+        ...
+
+    def stream(self, prompt: str, model_config: dict[str, Any]) -> AsyncGenerator[str, None]:
+        """Streams the agent response."""
         ...
 
 
