@@ -9,6 +9,7 @@
 # Source Code: https://github.com/CoReason-AI/coreason_maco
 
 import asyncio
+import re
 import time
 import traceback
 import uuid
@@ -149,8 +150,8 @@ class WorkflowRunner:
                             if condition is None:
                                 # Default edge always active
                                 activate = True
-                            elif output == condition:
-                                # Simple equality match
+                            elif str(output) == condition:
+                                # Simple equality match (casted to string for safety)
                                 activate = True
 
                             if activate:
@@ -187,6 +188,33 @@ class WorkflowRunner:
             if not producer.cancelled():
                 await producer
 
+    def _resolve_config(self, config: Dict[str, Any], node_outputs: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Recursively replaces {{ node_id }} with actual output values.
+        """
+        resolved = config.copy()
+
+        # Simple recursive helper
+        def replace_value(val: Any) -> Any:
+            if isinstance(val, str):
+                # Regex to find {{ some_node_id }}
+                matches = re.findall(r"\{\{\s*([\w\-_]+)\s*\}\}", val)
+                for node_ref in matches:
+                    if node_ref in node_outputs:
+                        # If the string is EXACTLY the template, replace with the raw object (e.g. dict/int)
+                        if val.strip() == f"{{{{ {node_ref} }}}}":
+                            return node_outputs[node_ref]
+                        # Otherwise replace string content
+                        val = val.replace(f"{{{{ {node_ref} }}}}", str(node_outputs[node_ref]))
+                return val
+            elif isinstance(val, dict):
+                return {k: replace_value(v) for k, v in val.items()}
+            elif isinstance(val, list):
+                return [replace_value(v) for v in val]
+            return val
+
+        return replace_value(resolved)  # type: ignore
+
     async def _execute_node(
         self,
         node_id: str,
@@ -220,7 +248,11 @@ class WorkflowRunner:
 
             node_data = recipe.nodes[node_id]
             node_type = node_data.get("type")
-            config = node_data.get("config", {})
+            raw_config = node_data.get("config", {})
+
+            # 2. Resolve Inputs (Data Injection)
+            config = self._resolve_config(raw_config, node_outputs)
+
             output = None
 
             if node_type == "TOOL":
@@ -238,6 +270,25 @@ class WorkflowRunner:
                     # Without a tool name, we can't do anything.
                     # In strict mode this might be an error.
                     pass
+
+            elif node_type == "LLM":
+                # Agent Execution
+                model_config = config.copy()
+                # Assuming 'prompt' or 'input' is in config, fallback to args
+                # The manual test uses 'config' directly for model, but AgentExecutor needs a prompt
+                # We assume the prompt is implicit or passed in config
+                prompt = config.get("prompt", config.get("args", {}).get("prompt", "Analyze this."))
+
+                # Allow user to pass prompt directly in config for simple nodes
+                if "prompt" not in config and "args" not in config:
+                    # Fallback: maybe the upstream output IS the prompt?
+                    # For now, we use a default if not found
+                    pass
+
+                agent_executor: AgentExecutor = context.agent_executor
+                result = await agent_executor.invoke(prompt, model_config)
+                output = result.content
+
             elif node_type == "COUNCIL":
                 # Council Execution
                 # Copy config to avoid modifying the graph
@@ -245,15 +296,15 @@ class WorkflowRunner:
                 prompt = c_config.pop("prompt", "Please analyze.")
                 council_config = CouncilConfig(**c_config)
 
-                agent_executor: AgentExecutor = context.agent_executor
+                agent_executor = context.agent_executor
                 strategy = CouncilStrategy(agent_executor)
 
-                result = await strategy.execute(prompt, council_config)
-                output = result.consensus
+                council_result = await strategy.execute(prompt, council_config)
+                output = council_result.consensus
 
                 vote_payload = CouncilVotePayload(
                     node_id=node_id,
-                    votes=result.individual_votes,
+                    votes=council_result.individual_votes,
                 )
                 vote_event = GraphEvent(
                     event_type="COUNCIL_VOTE",
