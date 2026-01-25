@@ -112,9 +112,20 @@ class CouncilVote(BaseModel):
     votes: Dict[str, str]
 
 
+class WorkflowError(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    node_id: str
+    error_message: str
+    stack_trace: str
+    input_snapshot: Dict[str, Any]
+    status: Literal["ERROR"] = "ERROR"
+    visual_cue: str = "RED_FLASH"
+
+
 # Aliases for compatibility
 NodeStartedPayload = NodeStarted
 NodeCompletedPayload = NodeCompleted
 EdgeTraversedPayload = EdgeTraversed
 ArtifactGeneratedPayload = ArtifactGenerated
 CouncilVotePayload = CouncilVote
+WorkflowErrorPayload = WorkflowError
