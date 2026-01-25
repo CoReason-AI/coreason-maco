@@ -15,6 +15,7 @@ from typing import Any, AsyncGenerator, Dict, Set
 
 import networkx as nx
 
+from coreason_maco.core.interfaces import ToolExecutor
 from coreason_maco.engine.topology import TopologyEngine
 from coreason_maco.events.protocol import (
     ExecutionContext,
@@ -194,8 +195,6 @@ class WorkflowRunner:
         """
         Executes a single node.
         """
-        # TODO: Use context.tool_registry to execute actual logic
-
         # 1. Emit NODE_START
         start_payload = NodeStarted(
             node_id=node_id,
@@ -214,13 +213,33 @@ class WorkflowRunner:
         )
         await queue.put(start_event)
 
-        # Simulate work
-        await asyncio.sleep(0.01)
+        node_data = recipe.nodes[node_id]
+        node_type = node_data.get("type")
+        config = node_data.get("config", {})
+        output = None
 
-        # Determine output
-        # In a real scenario, this comes from the tool/agent execution
-        # For testing, we look for 'mock_output' in node attributes
-        output = recipe.nodes[node_id].get("mock_output", None)
+        if node_type == "TOOL":
+            # Real Tool Execution
+            tool_name = config.get("tool_name")
+            tool_args = config.get("args", {})
+
+            if tool_name:
+                # We cast to ToolExecutor protocol to satisfy type checker if possible,
+                # but runtime duck typing works too.
+                # Assuming context.tool_registry implements execute.
+                executor: ToolExecutor = context.tool_registry
+                output = await executor.execute(tool_name, tool_args)
+            else:
+                # Without a tool name, we can't do anything.
+                # In strict mode this might be an error.
+                pass
+        else:
+            # Fallback / Mock
+            # Simulate work
+            await asyncio.sleep(0.01)
+            # In a real scenario, this comes from the tool/agent execution
+            # For testing, we look for 'mock_output' in node attributes
+            output = node_data.get("mock_output", None)
 
         # Store output for routing
         node_outputs[node_id] = output
@@ -228,7 +247,7 @@ class WorkflowRunner:
         # 2. Emit NODE_DONE
         end_payload = NodeCompleted(
             node_id=node_id,
-            output_summary=str(output) if output else "Completed",
+            output_summary=str(output) if output is not None else "Completed",
             status="SUCCESS",
             visual_cue="GREEN_GLOW",
         )
