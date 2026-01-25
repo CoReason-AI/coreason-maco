@@ -7,6 +7,7 @@ from coreason_maco.events.protocol import (
     GraphEvent,
     NodeCompleted,
     NodeRestored,
+    NodeSkipped,
     NodeStarted,
     WorkflowErrorPayload,
 )
@@ -67,6 +68,22 @@ class EventFactory:
             timestamp=time.time(),
             payload=payload.model_dump(),
             visual_metadata={"state": "RESTORED", "color": "#00FF00"},
+        )
+
+    @staticmethod
+    def create_node_skipped(run_id: str, node_id: str) -> GraphEvent:
+        payload = NodeSkipped(
+            node_id=node_id,
+            status="SKIPPED",
+            visual_cue="GREY_OUT",
+        )
+        return GraphEvent(
+            event_type="NODE_SKIPPED",
+            run_id=run_id,
+            node_id=node_id,
+            timestamp=time.time(),
+            payload=payload.model_dump(),
+            visual_metadata={"state": "SKIPPED", "color": "#GREY"},
         )
 
     @staticmethod

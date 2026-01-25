@@ -42,6 +42,7 @@ class GraphEvent(BaseModel):
         "NODE_STREAM",
         "NODE_DONE",
         "NODE_END",  # Added for compatibility with existing tests
+        "NODE_SKIPPED",
         "EDGE_ACTIVE",
         "COUNCIL_VOTE",
         "ERROR",
@@ -93,6 +94,11 @@ class NodeRestored(BaseNodePayload):
     visual_cue: str = "INSTANT_GREEN"
 
 
+class NodeSkipped(BaseNodePayload):
+    status: Literal["SKIPPED"] = "SKIPPED"
+    visual_cue: str = "GREY_OUT"
+
+
 class ArtifactGenerated(BaseNodePayload):
     artifact_type: str = "PDF"
     url: str
@@ -120,6 +126,7 @@ class WorkflowError(BaseNodePayload):
 # Aliases for compatibility
 NodeStartedPayload = NodeStarted
 NodeCompletedPayload = NodeCompleted
+NodeSkippedPayload = NodeSkipped
 EdgeTraversedPayload = EdgeTraversed
 ArtifactGeneratedPayload = ArtifactGenerated
 CouncilVotePayload = CouncilVote
