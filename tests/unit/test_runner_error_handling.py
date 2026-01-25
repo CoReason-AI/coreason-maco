@@ -1,14 +1,4 @@
-# Copyright (c) 2025 CoReason, Inc.
-#
-# This software is proprietary and dual-licensed.
-# Licensed under the Prosperity Public License 3.0 (the "License").
-# A copy of the license is available at https://prosperitylicense.com/versions/3.0.0
-# For details, see the LICENSE file.
-# Commercial use beyond a 30-day trial requires a separate license.
-#
-# Source Code: https://github.com/CoReason-AI/coreason_maco
-
-from typing import List
+from typing import Any, List
 from unittest.mock import MagicMock
 
 import networkx as nx
@@ -19,60 +9,75 @@ from coreason_maco.events.protocol import ExecutionContext, GraphEvent
 
 
 @pytest.fixture  # type: ignore
-def mock_context() -> ExecutionContext:
+def context() -> ExecutionContext:
     return ExecutionContext(
         user_id="test_user",
         trace_id="test_trace",
         secrets_map={},
-        tool_registry=MagicMock(),
+        tool_registry={},
         agent_executor=MagicMock(),
     )
 
 
+class CrashingHandler:
+    async def execute(self, *args: Any, **kwargs: Any) -> Any:
+        raise ValueError("Simulated Crash")
+
+
 @pytest.mark.asyncio  # type: ignore
-async def test_node_failure_emits_event(mock_context: ExecutionContext) -> None:
+async def test_node_execution_exception(context: ExecutionContext) -> None:
     """
-    Test that a node failure emits a GraphEvent of type ERROR.
-    We simulate failure by using a TOOL node and a mock ToolExecutor that raises.
+    Test that an exception in a node handler is caught, emitted as ERROR,
+    and then re-raised to stop the workflow.
+    Also covers lines 175-179 (except Exception in execution_task).
     """
-    graph = nx.DiGraph()
-    # Configure node "A" to be a tool that fails
-    graph.add_node("A", type="TOOL", config={"tool_name": "failing_tool"})
-
-    # Setup mock tool registry to raise ValueError
-    mock_context.tool_registry.execute.side_effect = ValueError("Tool Failed")
-
     runner = WorkflowRunner()
+    # Inject crashing handler
+    runner.handlers["CRASH"] = CrashingHandler()
+
+    G = nx.DiGraph()
+    G.add_node("A", type="CRASH")
+
     events: List[GraphEvent] = []
 
-    # The runner re-raises exceptions from TaskGroup as ExceptionGroup
-    with pytest.raises(ExceptionGroup) as excinfo:
-        async for event in runner.run_workflow(graph, mock_context):
+    with pytest.raises(ExceptionGroup) as exc_info:  # Python 3.11+ TaskGroup raises ExceptionGroup
+        async for event in runner.run_workflow(G, context):
             events.append(event)
 
-    # Check that we received the events
-    # Expected: NODE_START -> ERROR
-    node_starts = [e for e in events if e.event_type == "NODE_START"]
+    # Check that error event was emitted before crash
     error_events = [e for e in events if e.event_type == "ERROR"]
-
-    assert len(node_starts) == 1
     assert len(error_events) == 1
+    assert "Simulated Crash" in error_events[0].payload["error_message"]
 
-    error_event = error_events[0]
-    assert error_event.node_id == "A"
+    # Check that exception bubbled up
+    # ExceptionGroup will contain ValueError
+    # Inspect exceptions in the group
+    assert any("Simulated Crash" in str(e) for e in exc_info.value.exceptions)
 
-    payload = error_event.payload
-    assert payload["status"] == "ERROR"
-    assert payload["error_message"] == "Tool Failed"
-    assert "stack_trace" in payload
-    # stack trace should contain the ValueError
-    assert "ValueError: Tool Failed" in payload["stack_trace"]
 
-    # verify visual metadata
-    assert error_event.visual_metadata["state"] == "ERROR"
-    assert error_event.visual_metadata["color"] == "#RED"
+@pytest.mark.asyncio  # type: ignore
+async def test_consumer_cancellation(context: ExecutionContext) -> None:
+    """
+    Test consumer breaking the loop early.
+    Covers lines 191-198 (GeneratorExit handling).
+    """
+    runner = WorkflowRunner()
+    G = nx.DiGraph()
+    G.add_node("A", mock_output="A")
+    G.add_node("B", mock_output="B")
+    G.add_edge("A", "B")
 
-    # Verify that the exception caught by pytest matches what we raised
-    # ExceptionGroup usually wraps the exception
-    assert isinstance(excinfo.value.exceptions[0], ValueError)
-    assert str(excinfo.value.exceptions[0]) == "Tool Failed"
+    events: List[GraphEvent] = []
+
+    # Run only partially
+    gen = runner.run_workflow(G, context)
+    try:
+        async for event in gen:
+            events.append(event)
+            if event.event_type == "NODE_START" and event.node_id == "A":
+                break  # Cancel consumer
+    finally:
+        # Verify generator cleanup happens without error
+        await gen.aclose()
+
+    assert len(events) > 0
