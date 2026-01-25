@@ -11,7 +11,7 @@
 import asyncio
 import time
 import uuid
-from typing import AsyncGenerator
+from typing import Any, AsyncGenerator, Dict, Set
 
 import networkx as nx
 
@@ -52,12 +52,70 @@ class WorkflowRunner:
         # Queue to bridge execution tasks and the generator
         event_queue: asyncio.Queue[GraphEvent | None] = asyncio.Queue()
 
+        # Shared state for dynamic routing
+        node_outputs: Dict[str, Any] = {}
+        # Stores edges that have been activated by their source node
+        # Format: (source, target)
+        activated_edges: Set[tuple[str, str]] = set()
+
         async def _execution_task() -> None:
             try:
                 for layer in layers:
+                    # Filter nodes to execute based on active edges
+                    nodes_to_run = []
+                    for node_id in layer:
+                        predecessors = list(recipe.predecessors(node_id))
+                        if not predecessors:
+                            # Root nodes always run
+                            nodes_to_run.append(node_id)
+                            continue
+
+                        # Check if at least one incoming edge is activated
+                        is_active = False
+                        for pred in predecessors:
+                            if (pred, node_id) in activated_edges:
+                                is_active = True
+                                break
+
+                        if is_active:
+                            nodes_to_run.append(node_id)
+                        # Else: node is skipped implicitly
+
+                    if not nodes_to_run:
+                        continue
+
                     async with asyncio.TaskGroup() as tg:
-                        for node_id in layer:
-                            tg.create_task(self._execute_node(node_id, run_id, event_queue, context))
+                        for node_id in nodes_to_run:
+                            tg.create_task(
+                                self._execute_node(node_id, run_id, event_queue, context, recipe, node_outputs)
+                            )
+
+                    # After layer completes, evaluate outgoing edges for all nodes in this layer
+                    # Note: We iterate over all nodes in the layer, but we only care about those that just ran.
+                    # node_outputs will contain results for nodes that ran.
+                    for node_id in nodes_to_run:
+                        if node_id not in node_outputs:
+                            # Should not happen if _execute_node ran successfully
+                            continue  # pragma: no cover
+
+                        output = node_outputs[node_id]
+                        successors = list(recipe.successors(node_id))
+                        for succ in successors:
+                            edge_data = recipe.get_edge_data(node_id, succ)
+                            condition = edge_data.get("condition")
+
+                            # Determine if edge should be activated
+                            activate = False
+                            if condition is None:
+                                # Default edge always active
+                                activate = True
+                            elif output == condition:
+                                # Simple equality match
+                                activate = True
+
+                            if activate:
+                                activated_edges.add((node_id, succ))
+
                 # Signal end of stream
                 await event_queue.put(None)
             except Exception:
@@ -95,11 +153,14 @@ class WorkflowRunner:
         run_id: str,
         queue: asyncio.Queue[GraphEvent | None],
         context: ExecutionContext,
+        recipe: nx.DiGraph,
+        node_outputs: Dict[str, Any],
     ) -> None:
         """
         Executes a single node.
         """
         # TODO: Use context.tool_registry to execute actual logic
+
         # 1. Emit NODE_START
         start_payload = NodeStarted(
             node_id=node_id,
@@ -121,10 +182,18 @@ class WorkflowRunner:
         # Simulate work
         await asyncio.sleep(0.01)
 
+        # Determine output
+        # In a real scenario, this comes from the tool/agent execution
+        # For testing, we look for 'mock_output' in node attributes
+        output = recipe.nodes[node_id].get("mock_output", None)
+
+        # Store output for routing
+        node_outputs[node_id] = output
+
         # 2. Emit NODE_DONE
         end_payload = NodeCompleted(
             node_id=node_id,
-            output_summary="Completed",
+            output_summary=str(output) if output else "Completed",
             status="SUCCESS",
             visual_cue="GREEN_GLOW",
         )

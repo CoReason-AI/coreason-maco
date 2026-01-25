@@ -9,7 +9,7 @@
 # Source Code: https://github.com/CoReason-AI/coreason_maco
 
 import asyncio
-from typing import List
+from typing import Any, Dict, List
 
 import networkx as nx
 import pytest
@@ -70,6 +70,8 @@ async def test_execution_error(mock_context: ExecutionContext) -> None:
         run_id: str,
         queue: asyncio.Queue[GraphEvent | None],
         context: ExecutionContext,
+        recipe: nx.DiGraph,
+        node_outputs: Dict[str, Any],
     ) -> None:
         raise ValueError("Simulated Failure")
 
