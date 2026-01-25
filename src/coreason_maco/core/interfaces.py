@@ -8,7 +8,7 @@
 #
 # Source Code: https://github.com/CoReason-AI/coreason_maco
 
-from typing import Any, AsyncGenerator, Protocol
+from typing import Any, AsyncGenerator, Dict, List, Protocol
 
 
 class AgentResponse(Protocol):
@@ -44,6 +44,23 @@ class ToolExecutor(Protocol):
         ...
 
 
+class AuditLogger(Protocol):
+    """
+    Interface for the audit logger (coreason-veritas).
+    """
+
+    async def log_workflow_execution(
+        self,
+        trace_id: str,
+        run_id: str,
+        manifest: Dict[str, Any],
+        inputs: Dict[str, Any],
+        events: List[Dict[str, Any]],
+    ) -> Any:
+        """Logs the complete workflow execution."""
+        ...
+
+
 class ServiceRegistry(Protocol):
     """
     Dependency Injection container.
@@ -60,7 +77,7 @@ class ServiceRegistry(Protocol):
         ...
 
     @property
-    def audit_logger(self) -> Any:
+    def audit_logger(self) -> AuditLogger:
         """Returns the audit logger service."""
         ...
 

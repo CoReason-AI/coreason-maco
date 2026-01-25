@@ -85,5 +85,21 @@ class WorkflowController:
         )
 
         # 4. Run Workflow
+        event_history = []
+        run_id = None
+
         async for event in self.runner.run_workflow(graph, context, initial_inputs=inputs):
+            if run_id is None:
+                run_id = event.run_id
+            event_history.append(event.model_dump())
             yield event
+
+        # 5. Audit Logging
+        if self.services.audit_logger:
+            await self.services.audit_logger.log_workflow_execution(
+                trace_id=context.trace_id,
+                run_id=run_id or "unknown",
+                manifest=manifest,
+                inputs=inputs,
+                events=event_history,
+            )
