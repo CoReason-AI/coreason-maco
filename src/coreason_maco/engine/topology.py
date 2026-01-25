@@ -44,8 +44,9 @@ class TopologyEngine:
         if not nx.is_directed_acyclic_graph(graph):
             raise CyclicDependencyError("The workflow graph contains a cycle.")
 
-        if len(graph) > 0 and not nx.is_weakly_connected(graph):
-            raise GraphIntegrityError("The workflow graph contains disconnected islands.")
+        if len(graph) > 0:
+            if not nx.is_weakly_connected(graph):
+                raise GraphIntegrityError("The workflow graph contains disconnected islands.")
 
     def get_execution_layers(self, graph: nx.DiGraph) -> List[List[str]]:
         """
