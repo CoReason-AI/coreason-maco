@@ -18,7 +18,7 @@ from coreason_maco.engine.runner import WorkflowRunner
 from coreason_maco.events.protocol import ExecutionContext, GraphEvent
 
 
-@pytest.fixture
+@pytest.fixture  # type: ignore
 def context() -> ExecutionContext:
     return ExecutionContext(
         user_id="test_user",
@@ -29,7 +29,7 @@ def context() -> ExecutionContext:
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio  # type: ignore
 async def test_crash_and_resume_workflow(context: ExecutionContext) -> None:
     """
     Integration test simulating a crash and resume scenario.
