@@ -11,6 +11,7 @@
 import asyncio
 import time
 from typing import Any, Dict
+from unittest.mock import MagicMock
 
 import networkx as nx
 import pytest
@@ -48,6 +49,7 @@ def complex_context() -> ExecutionContext:
         trace_id="test_trace",
         secrets_map={},
         tool_registry=MockComplexToolExecutor(),
+        agent_executor=MagicMock(),
     )
 
 

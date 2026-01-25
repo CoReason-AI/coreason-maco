@@ -59,3 +59,8 @@ class ServiceRegistry(Protocol):
     def audit_logger(self) -> Any:
         """Returns the audit logger service."""
         ...
+
+    @property
+    def agent_executor(self) -> AgentExecutor:
+        """Returns the agent executor service."""
+        ...

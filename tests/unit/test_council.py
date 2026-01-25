@@ -61,8 +61,8 @@ async def test_council_success() -> None:
     result = await strategy.execute("Color?", config)
 
     assert result.consensus == "Consensus Reached"
-    assert "Blue" in result.individual_votes
-    assert "Red" in result.individual_votes
+    assert "Blue" in result.individual_votes.values()
+    assert "Red" in result.individual_votes.values()
 
 
 @pytest.mark.asyncio  # type: ignore
@@ -75,8 +75,8 @@ async def test_council_partial_failure() -> None:
     result = await strategy.execute("Color?", config)
 
     # GPT-4 failed, so only Claude's vote should be there
-    assert "Red" in result.individual_votes
-    assert "Blue" not in result.individual_votes
+    assert "Red" in result.individual_votes.values()
+    assert "Blue" not in result.individual_votes.values()
     assert len(result.individual_votes) == 1
 
 
