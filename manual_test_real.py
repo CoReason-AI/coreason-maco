@@ -9,7 +9,7 @@
 # Source Code: https://github.com/CoReason-AI/coreason_maco
 
 import asyncio
-from typing import Any, Dict
+from typing import Any, AsyncGenerator, Dict
 from unittest.mock import MagicMock
 
 from coreason_maco.core.controller import WorkflowController
@@ -25,6 +25,12 @@ class MockAgentExecutor:
         response.content = "Space is completely silent."
         response.metadata = {}
         return response
+
+    def stream(self, prompt: str, model_config: Dict[str, Any]) -> AsyncGenerator[str, None]:
+        async def _gen() -> AsyncGenerator[str, None]:
+            yield "Mock Stream"
+
+        return _gen()
 
 
 class MockToolExecutor:

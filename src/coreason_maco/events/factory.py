@@ -9,6 +9,7 @@ from coreason_maco.events.protocol import (
     NodeRestored,
     NodeSkipped,
     NodeStarted,
+    NodeStream,
     WorkflowErrorPayload,
 )
 
@@ -34,6 +35,22 @@ class EventFactory:
             timestamp=time.time(),
             payload=payload.model_dump(),
             visual_metadata={"state": "PULSING", "anim": "BREATHE"},
+        )
+
+    @staticmethod
+    def create_node_stream(run_id: str, node_id: str, chunk: str) -> GraphEvent:
+        payload = NodeStream(
+            node_id=node_id,
+            chunk=chunk,
+            visual_cue="TEXT_BUBBLE",
+        )
+        return GraphEvent(
+            event_type="NODE_STREAM",
+            run_id=run_id,
+            node_id=node_id,
+            timestamp=time.time(),
+            payload=payload.model_dump(),
+            visual_metadata={"overlay": "TEXT_BUBBLE"},
         )
 
     @staticmethod

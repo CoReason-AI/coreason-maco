@@ -9,7 +9,7 @@
 # Source Code: https://github.com/CoReason-AI/coreason_maco
 
 import asyncio
-from typing import Any, Dict, List
+from typing import Any, AsyncGenerator, Dict, List
 from unittest.mock import MagicMock
 
 import pytest
@@ -42,6 +42,12 @@ class MockAgentExecutor(AgentExecutor):
             return MockResponse("Consensus Reached")
 
         return MockResponse(self.responses.get(model_name, "Default Response"))
+
+    def stream(self, prompt: str, model_config: Dict[str, Any]) -> AsyncGenerator[str, None]:
+        async def _gen() -> AsyncGenerator[str, None]:
+            yield "Mock Stream"
+
+        return _gen()
 
 
 class MockToolExecutor(ToolExecutor):

@@ -9,6 +9,7 @@
 # Source Code: https://github.com/CoReason-AI/coreason_maco
 
 import asyncio
+import inspect
 from typing import Any, Dict, Protocol
 
 from coreason_maco.core.interfaces import AgentExecutor, ToolExecutor
@@ -84,6 +85,22 @@ class LLMNodeHandler:
         prompt = config.get("prompt", config.get("args", {}).get("prompt", "Analyze this."))
 
         agent_executor: AgentExecutor = context.agent_executor
+
+        # Try streaming first
+        try:
+            if hasattr(agent_executor, "stream"):
+                stream_gen = agent_executor.stream(prompt, model_config)
+
+                if inspect.isasyncgen(stream_gen):
+                    full_content = ""
+                    async for chunk in stream_gen:
+                        full_content += chunk
+                        await queue.put(EventFactory.create_node_stream(run_id, node_id, chunk))
+                    return full_content
+        except (TypeError, AttributeError, NotImplementedError):
+            # Fallback to invoke if stream is not implemented or not iterable (e.g. Mock)
+            pass
+
         result = await agent_executor.invoke(prompt, model_config)
         return result.content
 
