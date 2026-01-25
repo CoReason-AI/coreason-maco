@@ -72,7 +72,11 @@ def test_graph_event_invalid_type() -> None:
 def test_execution_context_creation() -> None:
     """Test creating a valid ExecutionContext."""
     context = ExecutionContext(
-        user_id="user-1", trace_id="trace-1", secrets_map={"API_KEY": "secret"}, tool_registry={"some_tool": "callable"}
+        user_id="user-1",
+        trace_id="trace-1",
+        secrets_map={"API_KEY": "secret"},
+        tool_registry={"some_tool": "callable"},
+        agent_executor={},
     )
     assert context.user_id == "user-1"
     assert context.secrets_map["API_KEY"] == "secret"

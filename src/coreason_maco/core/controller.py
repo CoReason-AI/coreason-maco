@@ -79,6 +79,7 @@ class WorkflowController:
             trace_id=trace_id,
             secrets_map=secrets_map,
             tool_registry=self.services.tool_registry,
+            agent_executor=self.services.agent_executor,
         )
 
         # 4. Run Workflow

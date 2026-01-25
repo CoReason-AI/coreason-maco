@@ -25,6 +25,7 @@ class ExecutionContext(BaseModel):
     trace_id: str
     secrets_map: Dict[str, str]  # Decrypted secrets passed from Vault
     tool_registry: Any  # Interface for coreason-mcp (The Tools)
+    agent_executor: Any  # Interface for coreason-cortex (The Agents)
 
 
 class GraphEvent(BaseModel):
@@ -105,8 +106,26 @@ class EdgeTraversed(BaseModel):
     animation_speed: str = "FAST"
 
 
+class CouncilVote(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    node_id: str
+    votes: Dict[str, str]
+
+
+class WorkflowError(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    node_id: str
+    error_message: str
+    stack_trace: str
+    input_snapshot: Dict[str, Any]
+    status: Literal["ERROR"] = "ERROR"
+    visual_cue: str = "RED_FLASH"
+
+
 # Aliases for compatibility
 NodeStartedPayload = NodeStarted
 NodeCompletedPayload = NodeCompleted
 EdgeTraversedPayload = EdgeTraversed
 ArtifactGeneratedPayload = ArtifactGenerated
+CouncilVotePayload = CouncilVote
+WorkflowErrorPayload = WorkflowError

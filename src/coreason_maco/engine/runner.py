@@ -10,12 +10,20 @@
 
 import asyncio
 import time
+import traceback
 import uuid
 from typing import Any, AsyncGenerator, Dict, Set
 
 import networkx as nx
 
-from coreason_maco.core.interfaces import ToolExecutor
+from coreason_maco.engine.handlers import (
+    CouncilNodeHandler,
+    DefaultNodeHandler,
+    LLMNodeHandler,
+    NodeHandler,
+    ToolNodeHandler,
+)
+from coreason_maco.engine.resolver import VariableResolver
 from coreason_maco.engine.topology import TopologyEngine
 from coreason_maco.events.protocol import (
     ExecutionContext,
@@ -23,6 +31,7 @@ from coreason_maco.events.protocol import (
     NodeCompleted,
     NodeRestored,
     NodeStarted,
+    WorkflowErrorPayload,
 )
 
 
@@ -33,6 +42,13 @@ class WorkflowRunner:
 
     def __init__(self, topology: TopologyEngine | None = None) -> None:
         self.topology = topology or TopologyEngine()
+        self.resolver = VariableResolver()
+        self.handlers: Dict[str, NodeHandler] = {
+            "TOOL": ToolNodeHandler(),
+            "LLM": LLMNodeHandler(),
+            "COUNCIL": CouncilNodeHandler(),
+        }
+        self.default_handler = DefaultNodeHandler()
 
     async def run_workflow(
         self, recipe: nx.DiGraph, context: ExecutionContext, resume_snapshot: Dict[str, Any] | None = None
@@ -145,8 +161,8 @@ class WorkflowRunner:
                             if condition is None:
                                 # Default edge always active
                                 activate = True
-                            elif output == condition:
-                                # Simple equality match
+                            elif str(output) == condition:
+                                # Simple equality match (casted to string for safety)
                                 activate = True
 
                             if activate:
@@ -195,69 +211,85 @@ class WorkflowRunner:
         """
         Executes a single node.
         """
-        # 1. Emit NODE_START
-        start_payload = NodeStarted(
-            node_id=node_id,
-            timestamp=time.time(),
-            status="RUNNING",
-            visual_cue="PULSE",
-        )
+        try:
+            # 1. Emit NODE_START
+            start_payload = NodeStarted(
+                node_id=node_id,
+                timestamp=time.time(),
+                status="RUNNING",
+                visual_cue="PULSE",
+            )
 
-        start_event = GraphEvent(
-            event_type="NODE_START",
-            run_id=run_id,
-            node_id=node_id,
-            timestamp=time.time(),
-            payload=start_payload.model_dump(),
-            visual_metadata={"state": "PULSING", "anim": "BREATHE"},
-        )
-        await queue.put(start_event)
+            start_event = GraphEvent(
+                event_type="NODE_START",
+                run_id=run_id,
+                node_id=node_id,
+                timestamp=time.time(),
+                payload=start_payload.model_dump(),
+                visual_metadata={"state": "PULSING", "anim": "BREATHE"},
+            )
+            await queue.put(start_event)
 
-        node_data = recipe.nodes[node_id]
-        node_type = node_data.get("type")
-        config = node_data.get("config", {})
-        output = None
+            node_data = recipe.nodes[node_id]
+            node_type = node_data.get("type", "DEFAULT")
+            raw_config = node_data.get("config", {})
 
-        if node_type == "TOOL":
-            # Real Tool Execution
-            tool_name = config.get("tool_name")
-            tool_args = config.get("args", {})
+            # 2. Resolve Inputs (Data Injection)
+            config = self.resolver.resolve(raw_config, node_outputs)
 
-            if tool_name:
-                # We cast to ToolExecutor protocol to satisfy type checker if possible,
-                # but runtime duck typing works too.
-                # Assuming context.tool_registry implements execute.
-                executor: ToolExecutor = context.tool_registry
-                output = await executor.execute(tool_name, tool_args)
-            else:
-                # Without a tool name, we can't do anything.
-                # In strict mode this might be an error.
-                pass
-        else:
-            # Fallback / Mock
-            # Simulate work
-            await asyncio.sleep(0.01)
-            # In a real scenario, this comes from the tool/agent execution
-            # For testing, we look for 'mock_output' in node attributes
-            output = node_data.get("mock_output", None)
+            # 3. Delegate to Handler
+            handler = self.handlers.get(node_type, self.default_handler)
+            output = await handler.execute(
+                node_id=node_id,
+                run_id=run_id,
+                config=config,
+                context=context,
+                queue=queue,
+                node_attributes=node_data,
+            )
 
-        # Store output for routing
-        node_outputs[node_id] = output
+            # Store output for routing
+            node_outputs[node_id] = output
 
-        # 2. Emit NODE_DONE
-        end_payload = NodeCompleted(
-            node_id=node_id,
-            output_summary=str(output) if output is not None else "Completed",
-            status="SUCCESS",
-            visual_cue="GREEN_GLOW",
-        )
+            # 4. Emit NODE_DONE
+            end_payload = NodeCompleted(
+                node_id=node_id,
+                output_summary=str(output) if output is not None else "Completed",
+                status="SUCCESS",
+                visual_cue="GREEN_GLOW",
+            )
 
-        end_event = GraphEvent(
-            event_type="NODE_DONE",
-            run_id=run_id,
-            node_id=node_id,
-            timestamp=time.time(),
-            payload=end_payload.model_dump(),
-            visual_metadata={"state": "SOLID", "color": "#GREEN"},
-        )
-        await queue.put(end_event)
+            end_event = GraphEvent(
+                event_type="NODE_DONE",
+                run_id=run_id,
+                node_id=node_id,
+                timestamp=time.time(),
+                payload=end_payload.model_dump(),
+                visual_metadata={"state": "SOLID", "color": "#GREEN"},
+            )
+            await queue.put(end_event)
+        except Exception as e:
+            # Capture stack trace
+            stack = traceback.format_exc()
+
+            # Create payload
+            error_payload = WorkflowErrorPayload(
+                node_id=node_id,
+                error_message=str(e),
+                stack_trace=stack,
+                input_snapshot=node_outputs.copy(),
+            )
+
+            # Emit Event
+            error_event = GraphEvent(
+                event_type="ERROR",
+                run_id=run_id,
+                node_id=node_id,
+                timestamp=time.time(),
+                payload=error_payload.model_dump(),
+                visual_metadata={"state": "ERROR", "color": "#RED"},
+            )
+            await queue.put(error_event)
+
+            # Re-raise to ensure workflow stops/bubbles up
+            raise e

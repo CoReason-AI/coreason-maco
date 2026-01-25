@@ -16,7 +16,7 @@ import pytest
 from pydantic import ValidationError
 
 from coreason_maco.core.controller import WorkflowController
-from coreason_maco.core.interfaces import ServiceRegistry, ToolExecutor
+from coreason_maco.core.interfaces import AgentExecutor, ServiceRegistry, ToolExecutor
 from coreason_maco.engine.topology import CyclicDependencyError
 from coreason_maco.events.protocol import GraphEvent
 
@@ -37,6 +37,10 @@ class MockServiceRegistry(ServiceRegistry):
 
     @property
     def audit_logger(self) -> Any:
+        return MagicMock()
+
+    @property
+    def agent_executor(self) -> AgentExecutor:
         return MagicMock()
 
 
@@ -254,3 +258,5 @@ async def test_controller_context_construction() -> None:
     assert context_arg.secrets_map == {"api_key": "123"}
     # Verify tool registry is from services
     assert isinstance(context_arg.tool_registry, MockToolExecutor)
+    # Verify agent executor is from services
+    assert isinstance(context_arg.agent_executor, MagicMock)
