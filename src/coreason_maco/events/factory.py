@@ -6,6 +6,7 @@ from coreason_maco.events.protocol import (
     EdgeTraversed,
     GraphEvent,
     NodeCompleted,
+    NodeInit,
     NodeRestored,
     NodeSkipped,
     NodeStarted,
@@ -19,6 +20,22 @@ class EventFactory:
     Factory for creating standardized GraphEvents.
     Reduces boilerplate in the runner.
     """
+
+    @staticmethod
+    def create_node_init(run_id: str, node_id: str, node_type: str) -> GraphEvent:
+        payload = NodeInit(
+            node_id=node_id,
+            type=node_type,
+            visual_cue="IDLE",
+        )
+        return GraphEvent(
+            event_type="NODE_INIT",
+            run_id=run_id,
+            node_id=node_id,
+            timestamp=time.time(),
+            payload=payload.model_dump(),
+            visual_metadata={"state": "IDLE", "color": "#GREY"},
+        )
 
     @staticmethod
     def create_node_start(run_id: str, node_id: str) -> GraphEvent:
