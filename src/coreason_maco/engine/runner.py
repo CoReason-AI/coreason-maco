@@ -41,8 +41,10 @@ class WorkflowRunner:
     The main execution engine that iterates through the DAG.
     """
 
-    def __init__(self, topology: TopologyEngine | None = None) -> None:
+    def __init__(self, topology: TopologyEngine | None = None, max_parallel_agents: int = 10) -> None:
         self.topology = topology or TopologyEngine()
+        self.max_parallel_agents = max_parallel_agents
+        self.semaphore = asyncio.Semaphore(max_parallel_agents)
         self.resolver = VariableResolver()
         self.handlers: Dict[str, NodeHandler] = {
             "TOOL": ToolNodeHandler(),
@@ -229,41 +231,42 @@ class WorkflowRunner:
         Executes a single node.
         """
         try:
-            # 1. Emit NODE_START
-            start_payload = NodeStarted(
-                node_id=node_id,
-                timestamp=time.time(),
-                status="RUNNING",
-                visual_cue="PULSE",
-            )
+            async with self.semaphore:
+                # 1. Emit NODE_START
+                start_payload = NodeStarted(
+                    node_id=node_id,
+                    timestamp=time.time(),
+                    status="RUNNING",
+                    visual_cue="PULSE",
+                )
 
-            start_event = GraphEvent(
-                event_type="NODE_START",
-                run_id=run_id,
-                node_id=node_id,
-                timestamp=time.time(),
-                payload=start_payload.model_dump(),
-                visual_metadata={"state": "PULSING", "anim": "BREATHE"},
-            )
-            await queue.put(start_event)
+                start_event = GraphEvent(
+                    event_type="NODE_START",
+                    run_id=run_id,
+                    node_id=node_id,
+                    timestamp=time.time(),
+                    payload=start_payload.model_dump(),
+                    visual_metadata={"state": "PULSING", "anim": "BREATHE"},
+                )
+                await queue.put(start_event)
 
-            node_data = recipe.nodes[node_id]
-            node_type = node_data.get("type", "DEFAULT")
-            raw_config = node_data.get("config", {})
+                node_data = recipe.nodes[node_id]
+                node_type = node_data.get("type", "DEFAULT")
+                raw_config = node_data.get("config", {})
 
-            # 2. Resolve Inputs (Data Injection)
-            config = self.resolver.resolve(raw_config, node_outputs)
+                # 2. Resolve Inputs (Data Injection)
+                config = self.resolver.resolve(raw_config, node_outputs)
 
-            # 3. Delegate to Handler
-            handler = self.handlers.get(node_type, self.default_handler)
-            output = await handler.execute(
-                node_id=node_id,
-                run_id=run_id,
-                config=config,
-                context=context,
-                queue=queue,
-                node_attributes=node_data,
-            )
+                # 3. Delegate to Handler
+                handler = self.handlers.get(node_type, self.default_handler)
+                output = await handler.execute(
+                    node_id=node_id,
+                    run_id=run_id,
+                    config=config,
+                    context=context,
+                    queue=queue,
+                    node_attributes=node_data,
+                )
 
             # Store output for routing
             node_outputs[node_id] = output
