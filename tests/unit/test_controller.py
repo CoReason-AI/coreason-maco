@@ -16,20 +16,20 @@ import pytest
 from pydantic import ValidationError
 
 from coreason_maco.core.controller import WorkflowController
-from coreason_maco.core.interfaces import ServiceRegistry, ToolRegistry
+from coreason_maco.core.interfaces import ServiceRegistry, ToolExecutor
 from coreason_maco.engine.topology import CyclicDependencyError
 from coreason_maco.events.protocol import GraphEvent
 
 
-class MockToolRegistry(ToolRegistry):
-    async def execute_tool(self, tool_name: str, args: dict[str, Any]) -> Any:
+class MockToolExecutor(ToolExecutor):
+    async def execute(self, tool_name: str, args: dict[str, Any]) -> Any:
         return "mock_result"
 
 
 class MockServiceRegistry(ServiceRegistry):
     @property
-    def tool_registry(self) -> ToolRegistry:
-        return MockToolRegistry()
+    def tool_registry(self) -> ToolExecutor:
+        return MockToolExecutor()
 
     @property
     def auth_manager(self) -> Any:
@@ -253,19 +253,4 @@ async def test_controller_context_construction() -> None:
     assert context_arg.trace_id == "specific_trace"
     assert context_arg.secrets_map == {"api_key": "123"}
     # Verify tool registry is from services
-    # Since we mocked ServiceRegistry, tool_registry property creates a NEW MockToolRegistry every access
-    # But wait, in the test setup:
-    # services = MockServiceRegistry()
-    # services.tool_registry returns MockToolRegistry()
-
-    # However, in WorkflowController.__init__: self.services = services
-    # In execute_recipe: tool_registry=self.services.tool_registry
-
-    # The MockServiceRegistry implementation:
-    # @property
-    # def tool_registry(self): return MockToolRegistry()
-
-    # So it returns a new instance each time. The context has one instance.
-    # The controller used `self.services.tool_registry` to create context.
-
-    assert isinstance(context_arg.tool_registry, MockToolRegistry)
+    assert isinstance(context_arg.tool_registry, MockToolExecutor)
