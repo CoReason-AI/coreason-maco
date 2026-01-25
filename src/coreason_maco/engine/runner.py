@@ -42,6 +42,8 @@ class WorkflowRunner:
     """
 
     def __init__(self, topology: TopologyEngine | None = None, max_parallel_agents: int = 10) -> None:
+        if max_parallel_agents < 1:
+            raise ValueError("max_parallel_agents must be >= 1")
         self.topology = topology or TopologyEngine()
         self.max_parallel_agents = max_parallel_agents
         self.semaphore = asyncio.Semaphore(max_parallel_agents)
