@@ -27,15 +27,39 @@ class VariableResolver:
     def _replace_value(self, val: Any, node_outputs: Dict[str, Any]) -> Any:
         if isinstance(val, str):
             # Regex to find {{ some_node_id }}
-            # Allows alphanumeric, underscores, and hyphens
-            matches = re.findall(r"\{\{\s*([\w\-_]+)\s*\}\}", val)
+            # Allows alphanumeric, underscores, hyphens, and dots
+            matches = re.findall(r"\{\{\s*([\w\-_\.]+)\s*\}\}", val)
             for node_ref in matches:
-                if node_ref in node_outputs:
+                parts = node_ref.split(".")
+                root_node = parts[0]
+
+                if root_node in node_outputs:
+                    current_val = node_outputs[root_node]
+                    resolution_failed = False
+
+                    for part in parts[1:]:
+                        if isinstance(current_val, dict):
+                            if part in current_val:
+                                current_val = current_val[part]
+                            else:
+                                resolution_failed = True
+                                break
+                        else:
+                            # Try getattr for objects
+                            if hasattr(current_val, part):
+                                current_val = getattr(current_val, part)
+                            else:
+                                resolution_failed = True
+                                break
+
+                    if resolution_failed:
+                        continue
+
                     # If the string is EXACTLY the template, replace with the raw object (e.g. dict/int)
                     if val.strip() == f"{{{{ {node_ref} }}}}":
-                        return node_outputs[node_ref]
+                        return current_val
                     # Otherwise replace string content
-                    val = val.replace(f"{{{{ {node_ref} }}}}", str(node_outputs[node_ref]))
+                    val = val.replace(f"{{{{ {node_ref} }}}}", str(current_val))
             return val
         elif isinstance(val, dict):
             return {k: self._replace_value(v, node_outputs) for k, v in val.items()}
