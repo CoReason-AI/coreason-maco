@@ -26,6 +26,7 @@ from coreason_maco.engine.handlers import (
 from coreason_maco.engine.resolver import VariableResolver
 from coreason_maco.engine.topology import TopologyEngine
 from coreason_maco.events.protocol import (
+    EdgeTraversed,
     ExecutionContext,
     GraphEvent,
     NodeCompleted,
@@ -167,6 +168,22 @@ class WorkflowRunner:
 
                             if activate:
                                 activated_edges.add((node_id, succ))
+
+                                # Emit EDGE_TRAVERSAL
+                                edge_payload = EdgeTraversed(
+                                    source=node_id,
+                                    target=succ,
+                                    animation_speed="FAST",
+                                )
+                                edge_event = GraphEvent(
+                                    event_type="EDGE_TRAVERSAL",
+                                    run_id=run_id,
+                                    node_id=node_id,
+                                    timestamp=time.time(),
+                                    payload=edge_payload.model_dump(),
+                                    visual_metadata={"flow_speed": "FAST", "particle": "DOT"},
+                                )
+                                await event_queue.put(edge_event)
 
                 # Signal end of stream
                 await event_queue.put(None)

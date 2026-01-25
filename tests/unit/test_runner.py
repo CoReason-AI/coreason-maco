@@ -44,9 +44,11 @@ async def test_sequential_execution(mock_context: ExecutionContext) -> None:
     async for event in runner.run_workflow(graph, mock_context):
         events.append(event)
 
-    assert len(events) == 6
+    assert len(events) == 8
     node_ids = [e.node_id for e in events]
-    assert node_ids == ["A", "A", "B", "B", "C", "C"]
+    # Events: A_Start, A_Done, Edge(A->B), B_Start, B_Done, Edge(B->C), C_Start, C_Done
+    # Note: Edge events use source node as node_id
+    assert node_ids == ["A", "A", "A", "B", "B", "B", "C", "C"]
 
 
 @pytest.mark.asyncio  # type: ignore
@@ -61,7 +63,10 @@ async def test_parallel_execution(mock_context: ExecutionContext) -> None:
     async for event in runner.run_workflow(graph, mock_context):
         events.append(event)
 
-    assert len(events) == 8
+    # 4 Nodes * 2 events = 8
+    # 4 Edges * 1 event = 4
+    # Total = 12
+    assert len(events) == 12
 
 
 @pytest.mark.asyncio  # type: ignore
@@ -174,4 +179,6 @@ async def test_runner_fan_out_fan_in(mock_context: ExecutionContext) -> None:
         events.append(event)
 
     # 52 nodes * 2 events = 104
-    assert len(events) == 104
+    # 100 edges * 1 event = 100
+    # Total = 204
+    assert len(events) == 204
