@@ -99,6 +99,11 @@ class NodeSkipped(BaseNodePayload):
     visual_cue: str = "GREY_OUT"
 
 
+class NodeStream(BaseNodePayload):
+    chunk: str
+    visual_cue: str = "TEXT_BUBBLE"
+
+
 class ArtifactGenerated(BaseNodePayload):
     artifact_type: str = "PDF"
     url: str
@@ -127,6 +132,7 @@ class WorkflowError(BaseNodePayload):
 NodeStartedPayload = NodeStarted
 NodeCompletedPayload = NodeCompleted
 NodeSkippedPayload = NodeSkipped
+NodeStreamPayload = NodeStream
 EdgeTraversedPayload = EdgeTraversed
 ArtifactGeneratedPayload = ArtifactGenerated
 CouncilVotePayload = CouncilVote
