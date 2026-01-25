@@ -17,6 +17,7 @@ from coreason_maco.events.protocol import (
     ExecutionContext,
     GraphEvent,
     NodeCompletedPayload,
+    NodeInitPayload,
     NodeStartedPayload,
 )
 
@@ -92,6 +93,11 @@ def test_payload_helpers() -> None:
     # NodeCompletedPayload requires node_id, output_summary
     payload_done = NodeCompletedPayload(node_id="node-1", output_summary="Done", cost=0.05)
     assert payload_done.cost == 0.05
+
+    # NodeInitPayload
+    payload_init = NodeInitPayload(node_id="node-1", type="LLM")
+    assert payload_init.type == "LLM"
+    assert payload_init.visual_cue == "IDLE"
 
 
 def test_graph_event_sequence_id() -> None:
