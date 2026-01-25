@@ -30,12 +30,12 @@ class AgentExecutor(Protocol):
         ...
 
 
-class ToolRegistry(Protocol):
+class ToolExecutor(Protocol):
     """
-    Interface for the tool registry (coreason-mcp).
+    Interface for the tool executor (coreason-mcp).
     """
 
-    async def execute_tool(self, tool_name: str, args: dict[str, Any]) -> Any:
+    async def execute(self, tool_name: str, args: dict[str, Any]) -> Any:
         """Executes a tool."""
         ...
 
@@ -46,7 +46,7 @@ class ServiceRegistry(Protocol):
     """
 
     @property
-    def tool_registry(self) -> ToolRegistry:
+    def tool_registry(self) -> ToolExecutor:
         """Returns the tool registry service."""
         ...
 
