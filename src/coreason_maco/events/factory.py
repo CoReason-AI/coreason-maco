@@ -2,6 +2,7 @@ import time
 from typing import Any, Dict
 
 from coreason_maco.events.protocol import (
+    ArtifactGenerated,
     CouncilVotePayload,
     EdgeTraversed,
     GraphEvent,
@@ -166,4 +167,20 @@ class EventFactory:
             timestamp=time.time(),
             payload=payload.model_dump(),
             visual_metadata={"widget": "VOTING_BOOTH"},
+        )
+
+    @staticmethod
+    def create_artifact_generated(run_id: str, node_id: str, artifact_type: str, url: str) -> GraphEvent:
+        payload = ArtifactGenerated(
+            node_id=node_id,
+            artifact_type=artifact_type,
+            url=url,
+        )
+        return GraphEvent(
+            event_type="ARTIFACT_GENERATED",
+            run_id=run_id,
+            node_id=node_id,
+            timestamp=time.time(),
+            payload=payload.model_dump(),
+            visual_metadata={"state": "ARTIFACT_GENERATED", "icon": "FILE"},
         )

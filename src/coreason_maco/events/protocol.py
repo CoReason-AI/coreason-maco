@@ -47,6 +47,7 @@ class GraphEvent(BaseModel):
         "COUNCIL_VOTE",
         "ERROR",
         "NODE_RESTORED",
+        "ARTIFACT_GENERATED",
     ]
     run_id: str
     trace_id: str = Field(
