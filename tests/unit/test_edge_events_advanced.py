@@ -45,7 +45,7 @@ async def test_diamond_pattern_traversal(mock_context: ExecutionContext) -> None
     async for event in runner.run_workflow(graph, mock_context):
         events.append(event)
 
-    edge_events = [e for e in events if e.event_type == "EDGE_TRAVERSAL"]
+    edge_events = [e for e in events if e.event_type == "EDGE_ACTIVE"]
     edges = [(EdgeTraversed(**e.payload).source, EdgeTraversed(**e.payload).target) for e in edge_events]
 
     assert len(edges) == 2
@@ -78,7 +78,7 @@ async def test_complex_output_condition(mock_context: ExecutionContext) -> None:
     async for event in runner.run_workflow(graph, mock_context):
         events.append(event)
 
-    edge_events = [e for e in events if e.event_type == "EDGE_TRAVERSAL"]
+    edge_events = [e for e in events if e.event_type == "EDGE_ACTIVE"]
 
     assert len(edge_events) == 1
     edge_data = EdgeTraversed(**edge_events[0].payload)
@@ -91,7 +91,7 @@ async def test_fan_out_edge_events(mock_context: ExecutionContext) -> None:
     """
     Test high-volume edge emission.
     A -> 50 nodes.
-    Expected: 50 EDGE_TRAVERSAL events.
+    Expected: 50 EDGE_ACTIVE events.
     """
     graph = nx.DiGraph()
     graph.add_node("A")
@@ -106,5 +106,5 @@ async def test_fan_out_edge_events(mock_context: ExecutionContext) -> None:
     async for event in runner.run_workflow(graph, mock_context):
         events.append(event)
 
-    edge_events = [e for e in events if e.event_type == "EDGE_TRAVERSAL"]
+    edge_events = [e for e in events if e.event_type == "EDGE_ACTIVE"]
     assert len(edge_events) == width

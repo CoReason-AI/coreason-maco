@@ -9,7 +9,6 @@
 # Source Code: https://github.com/CoReason-AI/coreason_maco
 
 import asyncio
-import time
 import traceback
 import uuid
 from typing import Any, AsyncGenerator, Dict, Set
@@ -25,15 +24,8 @@ from coreason_maco.engine.handlers import (
 )
 from coreason_maco.engine.resolver import VariableResolver
 from coreason_maco.engine.topology import TopologyEngine
-from coreason_maco.events.protocol import (
-    EdgeTraversed,
-    ExecutionContext,
-    GraphEvent,
-    NodeCompleted,
-    NodeRestored,
-    NodeStarted,
-    WorkflowErrorPayload,
-)
+from coreason_maco.events.factory import EventFactory
+from coreason_maco.events.protocol import ExecutionContext, GraphEvent
 
 
 class WorkflowRunner:
@@ -41,8 +33,12 @@ class WorkflowRunner:
     The main execution engine that iterates through the DAG.
     """
 
-    def __init__(self, topology: TopologyEngine | None = None) -> None:
+    def __init__(self, topology: TopologyEngine | None = None, max_parallel_agents: int = 10) -> None:
+        if max_parallel_agents < 1:
+            raise ValueError("max_parallel_agents must be >= 1")
         self.topology = topology or TopologyEngine()
+        self.max_parallel_agents = max_parallel_agents
+        self.semaphore = asyncio.Semaphore(max_parallel_agents)
         self.resolver = VariableResolver()
         self.handlers: Dict[str, NodeHandler] = {
             "TOOL": ToolNodeHandler(),
@@ -80,6 +76,8 @@ class WorkflowRunner:
         # Stores edges that have been activated by their source node
         # Format: (source, target)
         activated_edges: Set[tuple[str, str]] = set()
+        # Stores nodes that have been explicitly skipped
+        skipped_nodes: Set[str] = set()
 
         async def _execution_task() -> None:
             try:
@@ -88,6 +86,9 @@ class WorkflowRunner:
                     nodes_restored = []
 
                     for node_id in layer:
+                        if node_id in skipped_nodes:
+                            continue
+
                         # 1. Check Snapshot
                         if resume_snapshot and node_id in resume_snapshot:
                             nodes_restored.append(node_id)
@@ -109,7 +110,7 @@ class WorkflowRunner:
 
                         if is_active:
                             nodes_to_run.append(node_id)
-                        # Else: node is skipped implicitly
+                        # Else: node is skipped implicitly (but might have been pruned explicitly already)
 
                     if not nodes_to_run and not nodes_restored:
                         continue
@@ -120,21 +121,7 @@ class WorkflowRunner:
                         node_outputs[node_id] = output
 
                         # Emit NODE_RESTORED
-                        restore_payload = NodeRestored(
-                            node_id=node_id,
-                            output_summary=str(output),
-                            status="RESTORED",
-                            visual_cue="INSTANT_GREEN",
-                        )
-                        restore_event = GraphEvent(
-                            event_type="NODE_RESTORED",
-                            run_id=run_id,
-                            node_id=node_id,
-                            timestamp=time.time(),
-                            payload=restore_payload.model_dump(),
-                            visual_metadata={"state": "RESTORED", "color": "#00FF00"},
-                        )
-                        await event_queue.put(restore_event)
+                        await event_queue.put(EventFactory.create_node_restored(run_id, node_id, output))
 
                     # Execute Running Nodes
                     if nodes_to_run:
@@ -169,21 +156,19 @@ class WorkflowRunner:
                             if activate:
                                 activated_edges.add((node_id, succ))
 
-                                # Emit EDGE_TRAVERSAL
-                                edge_payload = EdgeTraversed(
-                                    source=node_id,
-                                    target=succ,
-                                    animation_speed="FAST",
+                                # Emit EDGE_ACTIVE
+                                await event_queue.put(EventFactory.create_edge_active(run_id, node_id, succ))
+                            else:
+                                # Attempt to prune the branch
+                                await self._prune_branch(
+                                    succ,
+                                    run_id,
+                                    event_queue,
+                                    recipe,
+                                    node_outputs,
+                                    activated_edges,
+                                    skipped_nodes,
                                 )
-                                edge_event = GraphEvent(
-                                    event_type="EDGE_TRAVERSAL",
-                                    run_id=run_id,
-                                    node_id=node_id,
-                                    timestamp=time.time(),
-                                    payload=edge_payload.model_dump(),
-                                    visual_metadata={"flow_speed": "FAST", "particle": "DOT"},
-                                )
-                                await event_queue.put(edge_event)
 
                 # Signal end of stream
                 await event_queue.put(None)
@@ -216,6 +201,52 @@ class WorkflowRunner:
             if not producer.cancelled():
                 await producer
 
+    async def _prune_branch(
+        self,
+        node_id: str,
+        run_id: str,
+        queue: asyncio.Queue[GraphEvent | None],
+        recipe: nx.DiGraph,
+        node_outputs: Dict[str, Any],
+        activated_edges: Set[tuple[str, str]],
+        skipped_nodes: Set[str],
+    ) -> None:
+        """
+        Recursively marks a branch as skipped if it is unreachable.
+        """
+        if node_id in skipped_nodes or node_id in node_outputs:
+            return
+
+        # Check if node is reachable from any other active parent
+        predecessors = list(recipe.predecessors(node_id))
+        is_reachable = False
+
+        for pred in predecessors:
+            # If parent is active (output exists) AND edge is activated -> Reachable
+            if pred in node_outputs and (pred, node_id) in activated_edges:
+                is_reachable = True
+                break
+
+            # If parent is NOT done and NOT skipped -> Potentially reachable
+            # We assume "not done" means it hasn't produced output yet and hasn't been skipped
+            if pred not in node_outputs and pred not in skipped_nodes:
+                # Parent is still pending, so we can't decide yet
+                return
+
+        # If we are here, it means all parents are either:
+        # 1. Done but didn't activate the edge to us.
+        # 2. Skipped themselves.
+        # AND none of them activated the edge to us.
+
+        if not is_reachable:
+            skipped_nodes.add(node_id)
+            await queue.put(EventFactory.create_node_skipped(run_id, node_id))
+
+            # Recursively prune successors
+            successors = list(recipe.successors(node_id))
+            for succ in successors:
+                await self._prune_branch(succ, run_id, queue, recipe, node_outputs, activated_edges, skipped_nodes)
+
     async def _execute_node(
         self,
         node_id: str,
@@ -229,84 +260,40 @@ class WorkflowRunner:
         Executes a single node.
         """
         try:
-            # 1. Emit NODE_START
-            start_payload = NodeStarted(
-                node_id=node_id,
-                timestamp=time.time(),
-                status="RUNNING",
-                visual_cue="PULSE",
-            )
+            async with self.semaphore:
+                # 1. Emit NODE_START
+                await queue.put(EventFactory.create_node_start(run_id, node_id))
 
-            start_event = GraphEvent(
-                event_type="NODE_START",
-                run_id=run_id,
-                node_id=node_id,
-                timestamp=time.time(),
-                payload=start_payload.model_dump(),
-                visual_metadata={"state": "PULSING", "anim": "BREATHE"},
-            )
-            await queue.put(start_event)
+                node_data = recipe.nodes[node_id]
+                node_type = node_data.get("type", "DEFAULT")
+                raw_config = node_data.get("config", {})
 
-            node_data = recipe.nodes[node_id]
-            node_type = node_data.get("type", "DEFAULT")
-            raw_config = node_data.get("config", {})
+                # 2. Resolve Inputs (Data Injection)
+                config = self.resolver.resolve(raw_config, node_outputs)
 
-            # 2. Resolve Inputs (Data Injection)
-            config = self.resolver.resolve(raw_config, node_outputs)
-
-            # 3. Delegate to Handler
-            handler = self.handlers.get(node_type, self.default_handler)
-            output = await handler.execute(
-                node_id=node_id,
-                run_id=run_id,
-                config=config,
-                context=context,
-                queue=queue,
-                node_attributes=node_data,
-            )
+                # 3. Delegate to Handler
+                handler = self.handlers.get(node_type, self.default_handler)
+                output = await handler.execute(
+                    node_id=node_id,
+                    run_id=run_id,
+                    config=config,
+                    context=context,
+                    queue=queue,
+                    node_attributes=node_data,
+                )
 
             # Store output for routing
             node_outputs[node_id] = output
 
             # 4. Emit NODE_DONE
-            end_payload = NodeCompleted(
-                node_id=node_id,
-                output_summary=str(output) if output is not None else "Completed",
-                status="SUCCESS",
-                visual_cue="GREEN_GLOW",
-            )
+            await queue.put(EventFactory.create_node_done(run_id, node_id, output))
 
-            end_event = GraphEvent(
-                event_type="NODE_DONE",
-                run_id=run_id,
-                node_id=node_id,
-                timestamp=time.time(),
-                payload=end_payload.model_dump(),
-                visual_metadata={"state": "SOLID", "color": "#GREEN"},
-            )
-            await queue.put(end_event)
         except Exception as e:
             # Capture stack trace
             stack = traceback.format_exc()
 
-            # Create payload
-            error_payload = WorkflowErrorPayload(
-                node_id=node_id,
-                error_message=str(e),
-                stack_trace=stack,
-                input_snapshot=node_outputs.copy(),
-            )
-
             # Emit Event
-            error_event = GraphEvent(
-                event_type="ERROR",
-                run_id=run_id,
-                node_id=node_id,
-                timestamp=time.time(),
-                payload=error_payload.model_dump(),
-                visual_metadata={"state": "ERROR", "color": "#RED"},
-            )
-            await queue.put(error_event)
+            await queue.put(EventFactory.create_error(run_id, node_id, str(e), stack, node_outputs.copy()))
 
             # Re-raise to ensure workflow stops/bubbles up
             raise e

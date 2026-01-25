@@ -42,8 +42,8 @@ class GraphEvent(BaseModel):
         "NODE_STREAM",
         "NODE_DONE",
         "NODE_END",  # Added for compatibility with existing tests
+        "NODE_SKIPPED",
         "EDGE_ACTIVE",
-        "EDGE_TRAVERSAL",
         "COUNCIL_VOTE",
         "ERROR",
         "NODE_RESTORED",
@@ -65,36 +65,41 @@ class GraphEvent(BaseModel):
     )
 
 
-# Payload Models expected by existing code
-class NodeStarted(BaseModel):
+# Base Models
+class BaseNodePayload(BaseModel):
+    """Base model for node-related events."""
+
     model_config = ConfigDict(extra="forbid")
     node_id: str
+
+
+# Payload Models expected by existing code
+class NodeStarted(BaseNodePayload):
     timestamp: float
     status: Literal["RUNNING"] = "RUNNING"
     visual_cue: str = "PULSE"
     input_tokens: Optional[int] = None
 
 
-class NodeCompleted(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    node_id: str
+class NodeCompleted(BaseNodePayload):
     output_summary: str
     status: Literal["SUCCESS"] = "SUCCESS"
     visual_cue: str = "GREEN_GLOW"
     cost: Optional[float] = None
 
 
-class NodeRestored(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    node_id: str
+class NodeRestored(BaseNodePayload):
     output_summary: str
     status: Literal["RESTORED"] = "RESTORED"
     visual_cue: str = "INSTANT_GREEN"
 
 
-class ArtifactGenerated(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    node_id: str
+class NodeSkipped(BaseNodePayload):
+    status: Literal["SKIPPED"] = "SKIPPED"
+    visual_cue: str = "GREY_OUT"
+
+
+class ArtifactGenerated(BaseNodePayload):
     artifact_type: str = "PDF"
     url: str
 
@@ -106,15 +111,11 @@ class EdgeTraversed(BaseModel):
     animation_speed: str = "FAST"
 
 
-class CouncilVote(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    node_id: str
+class CouncilVote(BaseNodePayload):
     votes: Dict[str, str]
 
 
-class WorkflowError(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    node_id: str
+class WorkflowError(BaseNodePayload):
     error_message: str
     stack_trace: str
     input_snapshot: Dict[str, Any]
@@ -125,6 +126,7 @@ class WorkflowError(BaseModel):
 # Aliases for compatibility
 NodeStartedPayload = NodeStarted
 NodeCompletedPayload = NodeCompleted
+NodeSkippedPayload = NodeSkipped
 EdgeTraversedPayload = EdgeTraversed
 ArtifactGeneratedPayload = ArtifactGenerated
 CouncilVotePayload = CouncilVote

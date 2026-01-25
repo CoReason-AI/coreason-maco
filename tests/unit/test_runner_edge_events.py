@@ -32,12 +32,12 @@ def mock_context() -> ExecutionContext:
 @pytest.mark.asyncio  # type: ignore
 async def test_edge_traversal_events(mock_context: ExecutionContext) -> None:
     """
-    Test that EDGE_TRAVERSAL events are emitted when moving between nodes.
+    Test that EDGE_ACTIVE events are emitted when moving between nodes.
     Graph: A -> B
     Expected Events:
     1. NODE_START (A)
     2. NODE_DONE (A)
-    3. EDGE_TRAVERSAL (A -> B)
+    3. EDGE_ACTIVE (A -> B)
     4. NODE_START (B)
     5. NODE_DONE (B)
     """
@@ -51,12 +51,12 @@ async def test_edge_traversal_events(mock_context: ExecutionContext) -> None:
         events.append(event)
 
     # Filter for edge events
-    edge_events = [e for e in events if e.event_type == "EDGE_TRAVERSAL"]
+    edge_events = [e for e in events if e.event_type == "EDGE_ACTIVE"]
 
     assert len(edge_events) == 1
 
     event = edge_events[0]
-    assert event.event_type == "EDGE_TRAVERSAL"
+    assert event.event_type == "EDGE_ACTIVE"
 
     # Verify payload
     payload = event.payload
