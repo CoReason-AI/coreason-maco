@@ -10,6 +10,7 @@
 
 import asyncio
 import time
+import traceback
 import uuid
 from typing import Any, AsyncGenerator, Dict, Set
 
@@ -24,6 +25,7 @@ from coreason_maco.events.protocol import (
     NodeCompleted,
     NodeRestored,
     NodeStarted,
+    WorkflowErrorPayload,
 )
 from coreason_maco.strategies.council import CouncilConfig, CouncilStrategy
 
@@ -197,95 +199,121 @@ class WorkflowRunner:
         """
         Executes a single node.
         """
-        # 1. Emit NODE_START
-        start_payload = NodeStarted(
-            node_id=node_id,
-            timestamp=time.time(),
-            status="RUNNING",
-            visual_cue="PULSE",
-        )
-
-        start_event = GraphEvent(
-            event_type="NODE_START",
-            run_id=run_id,
-            node_id=node_id,
-            timestamp=time.time(),
-            payload=start_payload.model_dump(),
-            visual_metadata={"state": "PULSING", "anim": "BREATHE"},
-        )
-        await queue.put(start_event)
-
-        node_data = recipe.nodes[node_id]
-        node_type = node_data.get("type")
-        config = node_data.get("config", {})
-        output = None
-
-        if node_type == "TOOL":
-            # Real Tool Execution
-            tool_name = config.get("tool_name")
-            tool_args = config.get("args", {})
-
-            if tool_name:
-                # We cast to ToolExecutor protocol to satisfy type checker if possible,
-                # but runtime duck typing works too.
-                # Assuming context.tool_registry implements execute.
-                executor: ToolExecutor = context.tool_registry
-                output = await executor.execute(tool_name, tool_args)
-            else:
-                # Without a tool name, we can't do anything.
-                # In strict mode this might be an error.
-                pass
-        elif node_type == "COUNCIL":
-            # Council Execution
-            # Copy config to avoid modifying the graph
-            c_config = config.copy()
-            prompt = c_config.pop("prompt", "Please analyze.")
-            council_config = CouncilConfig(**c_config)
-
-            agent_executor: AgentExecutor = context.agent_executor
-            strategy = CouncilStrategy(agent_executor)
-
-            result = await strategy.execute(prompt, council_config)
-            output = result.consensus
-
-            vote_payload = CouncilVotePayload(
+        try:
+            # 1. Emit NODE_START
+            start_payload = NodeStarted(
                 node_id=node_id,
-                votes=result.individual_votes,
+                timestamp=time.time(),
+                status="RUNNING",
+                visual_cue="PULSE",
             )
-            vote_event = GraphEvent(
-                event_type="COUNCIL_VOTE",
+
+            start_event = GraphEvent(
+                event_type="NODE_START",
                 run_id=run_id,
                 node_id=node_id,
                 timestamp=time.time(),
-                payload=vote_payload.model_dump(),
-                visual_metadata={"widget": "VOTING_BOOTH"},
+                payload=start_payload.model_dump(),
+                visual_metadata={"state": "PULSING", "anim": "BREATHE"},
             )
-            await queue.put(vote_event)
-        else:
-            # Fallback / Mock
-            # Simulate work
-            await asyncio.sleep(0.01)
-            # In a real scenario, this comes from the tool/agent execution
-            # For testing, we look for 'mock_output' in node attributes
-            output = node_data.get("mock_output", None)
+            await queue.put(start_event)
 
-        # Store output for routing
-        node_outputs[node_id] = output
+            node_data = recipe.nodes[node_id]
+            node_type = node_data.get("type")
+            config = node_data.get("config", {})
+            output = None
 
-        # 2. Emit NODE_DONE
-        end_payload = NodeCompleted(
-            node_id=node_id,
-            output_summary=str(output) if output is not None else "Completed",
-            status="SUCCESS",
-            visual_cue="GREEN_GLOW",
-        )
+            if node_type == "TOOL":
+                # Real Tool Execution
+                tool_name = config.get("tool_name")
+                tool_args = config.get("args", {})
 
-        end_event = GraphEvent(
-            event_type="NODE_DONE",
-            run_id=run_id,
-            node_id=node_id,
-            timestamp=time.time(),
-            payload=end_payload.model_dump(),
-            visual_metadata={"state": "SOLID", "color": "#GREEN"},
-        )
-        await queue.put(end_event)
+                if tool_name:
+                    # We cast to ToolExecutor protocol to satisfy type checker if possible,
+                    # but runtime duck typing works too.
+                    # Assuming context.tool_registry implements execute.
+                    executor: ToolExecutor = context.tool_registry
+                    output = await executor.execute(tool_name, tool_args)
+                else:
+                    # Without a tool name, we can't do anything.
+                    # In strict mode this might be an error.
+                    pass
+            elif node_type == "COUNCIL":
+                # Council Execution
+                # Copy config to avoid modifying the graph
+                c_config = config.copy()
+                prompt = c_config.pop("prompt", "Please analyze.")
+                council_config = CouncilConfig(**c_config)
+
+                agent_executor: AgentExecutor = context.agent_executor
+                strategy = CouncilStrategy(agent_executor)
+
+                result = await strategy.execute(prompt, council_config)
+                output = result.consensus
+
+                vote_payload = CouncilVotePayload(
+                    node_id=node_id,
+                    votes=result.individual_votes,
+                )
+                vote_event = GraphEvent(
+                    event_type="COUNCIL_VOTE",
+                    run_id=run_id,
+                    node_id=node_id,
+                    timestamp=time.time(),
+                    payload=vote_payload.model_dump(),
+                    visual_metadata={"widget": "VOTING_BOOTH"},
+                )
+                await queue.put(vote_event)
+            else:
+                # Fallback / Mock
+                # Simulate work
+                await asyncio.sleep(0.01)
+                # In a real scenario, this comes from the tool/agent execution
+                # For testing, we look for 'mock_output' in node attributes
+                output = node_data.get("mock_output", None)
+
+            # Store output for routing
+            node_outputs[node_id] = output
+
+            # 2. Emit NODE_DONE
+            end_payload = NodeCompleted(
+                node_id=node_id,
+                output_summary=str(output) if output is not None else "Completed",
+                status="SUCCESS",
+                visual_cue="GREEN_GLOW",
+            )
+
+            end_event = GraphEvent(
+                event_type="NODE_DONE",
+                run_id=run_id,
+                node_id=node_id,
+                timestamp=time.time(),
+                payload=end_payload.model_dump(),
+                visual_metadata={"state": "SOLID", "color": "#GREEN"},
+            )
+            await queue.put(end_event)
+        except Exception as e:
+            # Capture stack trace
+            stack = traceback.format_exc()
+
+            # Create payload
+            error_payload = WorkflowErrorPayload(
+                node_id=node_id,
+                error_message=str(e),
+                stack_trace=stack,
+                input_snapshot=node_outputs.copy(),
+            )
+
+            # Emit Event
+            error_event = GraphEvent(
+                event_type="ERROR",
+                run_id=run_id,
+                node_id=node_id,
+                timestamp=time.time(),
+                payload=error_payload.model_dump(),
+                visual_metadata={"state": "ERROR", "color": "#RED"},
+            )
+            await queue.put(error_event)
+
+            # Re-raise to ensure workflow stops/bubbles up
+            raise e
