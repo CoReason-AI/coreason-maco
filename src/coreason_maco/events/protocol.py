@@ -19,6 +19,7 @@ EventType = Literal[
     "NODE_STREAM",
     "NODE_END",  # BRD
     "NODE_DONE",  # TRD
+    "NODE_RESTORED",
     "EDGE_TRAVERSAL",  # BRD
     "EDGE_ACTIVE",  # TRD
     "COUNCIL_VOTE",
@@ -114,3 +115,16 @@ class ArtifactGenerated(BaseModel):
     node_id: str
     artifact_type: str = "PDF"
     url: str
+
+
+class NodeRestored(BaseModel):
+    """
+    Event payload for when a node is restored from snapshot.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    node_id: str
+    output_summary: str
+    status: Literal["RESTORED"] = "RESTORED"
+    visual_cue: str = "INSTANT_GREEN"

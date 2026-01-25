@@ -20,6 +20,7 @@ from coreason_maco.events.protocol import (
     ExecutionContext,
     GraphEvent,
     NodeCompleted,
+    NodeRestored,
     NodeStarted,
 )
 
@@ -32,13 +33,17 @@ class WorkflowRunner:
     def __init__(self, topology: TopologyEngine | None = None) -> None:
         self.topology = topology or TopologyEngine()
 
-    async def run_workflow(self, recipe: nx.DiGraph, context: ExecutionContext) -> AsyncGenerator[GraphEvent, None]:
+    async def run_workflow(
+        self, recipe: nx.DiGraph, context: ExecutionContext, resume_snapshot: Dict[str, Any] | None = None
+    ) -> AsyncGenerator[GraphEvent, None]:
         """
         Executes the workflow defined by the recipe.
 
         Args:
             recipe: The NetworkX DiGraph representing the workflow.
             context: The execution context.
+            resume_snapshot: A dictionary mapping node IDs to their previous outputs.
+                             If provided, these nodes will be restored instead of executed.
 
         Yields:
             GraphEvent: Real-time telemetry events.
@@ -61,9 +66,16 @@ class WorkflowRunner:
         async def _execution_task() -> None:
             try:
                 for layer in layers:
-                    # Filter nodes to execute based on active edges
                     nodes_to_run = []
+                    nodes_restored = []
+
                     for node_id in layer:
+                        # 1. Check Snapshot
+                        if resume_snapshot and node_id in resume_snapshot:
+                            nodes_restored.append(node_id)
+                            continue
+
+                        # 2. Check Predecessors
                         predecessors = list(recipe.predecessors(node_id))
                         if not predecessors:
                             # Root nodes always run
@@ -81,19 +93,42 @@ class WorkflowRunner:
                             nodes_to_run.append(node_id)
                         # Else: node is skipped implicitly
 
-                    if not nodes_to_run:
+                    if not nodes_to_run and not nodes_restored:
                         continue
 
-                    async with asyncio.TaskGroup() as tg:
-                        for node_id in nodes_to_run:
-                            tg.create_task(
-                                self._execute_node(node_id, run_id, event_queue, context, recipe, node_outputs)
-                            )
+                    # Process Restored Nodes
+                    for node_id in nodes_restored:
+                        output = resume_snapshot[node_id]  # type: ignore
+                        node_outputs[node_id] = output
 
-                    # After layer completes, evaluate outgoing edges for all nodes in this layer
-                    # Note: We iterate over all nodes in the layer, but we only care about those that just ran.
-                    # node_outputs will contain results for nodes that ran.
-                    for node_id in nodes_to_run:
+                        # Emit NODE_RESTORED
+                        restore_payload = NodeRestored(
+                            node_id=node_id,
+                            output_summary=str(output),
+                            status="RESTORED",
+                            visual_cue="INSTANT_GREEN",
+                        )
+                        restore_event = GraphEvent(
+                            event_type="NODE_RESTORED",
+                            run_id=run_id,
+                            node_id=node_id,
+                            timestamp=time.time(),
+                            payload=restore_payload.model_dump(),
+                            visual_metadata={"state": "RESTORED", "color": "#00FF00"},
+                        )
+                        await event_queue.put(restore_event)
+
+                    # Execute Running Nodes
+                    if nodes_to_run:
+                        async with asyncio.TaskGroup() as tg:
+                            for node_id in nodes_to_run:
+                                tg.create_task(
+                                    self._execute_node(node_id, run_id, event_queue, context, recipe, node_outputs)
+                                )
+
+                    # After layer completes, evaluate outgoing edges for all processed nodes
+                    all_active_nodes = nodes_restored + nodes_to_run
+                    for node_id in all_active_nodes:
                         if node_id not in node_outputs:
                             # Should not happen if _execute_node ran successfully
                             continue  # pragma: no cover
