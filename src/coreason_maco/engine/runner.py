@@ -81,6 +81,11 @@ class WorkflowRunner:
 
         async def _execution_task() -> None:
             try:
+                # Emit NODE_INIT for all nodes to populate the canvas
+                for node_id, data in recipe.nodes(data=True):
+                    node_type = data.get("type", "DEFAULT")
+                    await event_queue.put(EventFactory.create_node_init(run_id, node_id, node_type))
+
                 for layer in layers:
                     nodes_to_run = []
                     nodes_restored = []

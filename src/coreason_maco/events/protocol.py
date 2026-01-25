@@ -74,6 +74,11 @@ class BaseNodePayload(BaseModel):
 
 
 # Payload Models expected by existing code
+class NodeInit(BaseNodePayload):
+    type: str = "DEFAULT"
+    visual_cue: str = "IDLE"
+
+
 class NodeStarted(BaseNodePayload):
     timestamp: float
     status: Literal["RUNNING"] = "RUNNING"
@@ -129,6 +134,7 @@ class WorkflowError(BaseNodePayload):
 
 
 # Aliases for compatibility
+NodeInitPayload = NodeInit
 NodeStartedPayload = NodeStarted
 NodeCompletedPayload = NodeCompleted
 NodeSkippedPayload = NodeSkipped
