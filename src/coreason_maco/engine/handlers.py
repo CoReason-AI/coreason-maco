@@ -66,7 +66,23 @@ class ToolNodeHandler:
             # We cast to ToolExecutor protocol to satisfy type checker if possible,
             # but runtime duck typing works too.
             executor: ToolExecutor = context.tool_registry
-            return await executor.execute(tool_name, tool_args)
+            result = await executor.execute(tool_name, tool_args)
+
+            # Check for Artifact
+            artifact_type = None
+            url = None
+
+            if hasattr(result, "artifact_type") and hasattr(result, "url"):
+                artifact_type = result.artifact_type
+                url = result.url
+            elif isinstance(result, dict) and "artifact_type" in result and "url" in result:
+                artifact_type = result["artifact_type"]
+                url = result["url"]
+
+            if artifact_type and url:
+                await queue.put(EventFactory.create_artifact_generated(run_id, node_id, artifact_type, url))
+
+            return result
         return None
 
 
