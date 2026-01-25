@@ -48,7 +48,11 @@ class WorkflowRunner:
         self.default_handler = DefaultNodeHandler()
 
     async def run_workflow(
-        self, recipe: nx.DiGraph, context: ExecutionContext, resume_snapshot: Dict[str, Any] | None = None
+        self,
+        recipe: nx.DiGraph,
+        context: ExecutionContext,
+        resume_snapshot: Dict[str, Any] | None = None,
+        initial_inputs: Dict[str, Any] | None = None,
     ) -> AsyncGenerator[GraphEvent, None]:
         """
         Executes the workflow defined by the recipe.
@@ -58,6 +62,7 @@ class WorkflowRunner:
             context: The execution context.
             resume_snapshot: A dictionary mapping node IDs to their previous outputs.
                              If provided, these nodes will be restored instead of executed.
+            initial_inputs: Initial input variables to be available for resolution.
 
         Yields:
             GraphEvent: Real-time telemetry events.
@@ -72,7 +77,7 @@ class WorkflowRunner:
         event_queue: asyncio.Queue[GraphEvent | None] = asyncio.Queue()
 
         # Shared state for dynamic routing
-        node_outputs: Dict[str, Any] = {}
+        node_outputs: Dict[str, Any] = initial_inputs.copy() if initial_inputs else {}
         # Stores edges that have been activated by their source node
         # Format: (source, target)
         activated_edges: Set[tuple[str, str]] = set()

@@ -85,5 +85,5 @@ class WorkflowController:
         )
 
         # 4. Run Workflow
-        async for event in self.runner.run_workflow(graph, context):
+        async for event in self.runner.run_workflow(graph, context, initial_inputs=inputs):
             yield event
