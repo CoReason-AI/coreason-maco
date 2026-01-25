@@ -90,8 +90,13 @@ async def test_branching_resume(runner: WorkflowRunner, context: ExecutionContex
     # B ran
     assert any(e.node_id == "B" and e.event_type == "NODE_DONE" for e in events)
 
-    # C did not run
-    assert not any(e.node_id == "C" for e in events)
+    # C skipped
+    # With explicit skipping, C will be present but as NODE_SKIPPED
+    skipped_nodes = {e.node_id for e in events if e.event_type == "NODE_SKIPPED"}
+    done_nodes = {e.node_id for e in events if e.event_type == "NODE_DONE"}
+
+    assert "C" in skipped_nodes
+    assert "C" not in done_nodes
 
 
 @pytest.mark.asyncio  # type: ignore

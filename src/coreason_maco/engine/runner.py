@@ -76,6 +76,8 @@ class WorkflowRunner:
         # Stores edges that have been activated by their source node
         # Format: (source, target)
         activated_edges: Set[tuple[str, str]] = set()
+        # Stores nodes that have been explicitly skipped
+        skipped_nodes: Set[str] = set()
 
         async def _execution_task() -> None:
             try:
@@ -84,6 +86,9 @@ class WorkflowRunner:
                     nodes_restored = []
 
                     for node_id in layer:
+                        if node_id in skipped_nodes:
+                            continue
+
                         # 1. Check Snapshot
                         if resume_snapshot and node_id in resume_snapshot:
                             nodes_restored.append(node_id)
@@ -105,7 +110,7 @@ class WorkflowRunner:
 
                         if is_active:
                             nodes_to_run.append(node_id)
-                        # Else: node is skipped implicitly
+                        # Else: node is skipped implicitly (but might have been pruned explicitly already)
 
                     if not nodes_to_run and not nodes_restored:
                         continue
@@ -153,6 +158,17 @@ class WorkflowRunner:
 
                                 # Emit EDGE_ACTIVE
                                 await event_queue.put(EventFactory.create_edge_active(run_id, node_id, succ))
+                            else:
+                                # Attempt to prune the branch
+                                await self._prune_branch(
+                                    succ,
+                                    run_id,
+                                    event_queue,
+                                    recipe,
+                                    node_outputs,
+                                    activated_edges,
+                                    skipped_nodes,
+                                )
 
                 # Signal end of stream
                 await event_queue.put(None)
@@ -184,6 +200,52 @@ class WorkflowRunner:
             # Propagate any exceptions from the producer (if it wasn't cancelled)
             if not producer.cancelled():
                 await producer
+
+    async def _prune_branch(
+        self,
+        node_id: str,
+        run_id: str,
+        queue: asyncio.Queue[GraphEvent | None],
+        recipe: nx.DiGraph,
+        node_outputs: Dict[str, Any],
+        activated_edges: Set[tuple[str, str]],
+        skipped_nodes: Set[str],
+    ) -> None:
+        """
+        Recursively marks a branch as skipped if it is unreachable.
+        """
+        if node_id in skipped_nodes or node_id in node_outputs:
+            return
+
+        # Check if node is reachable from any other active parent
+        predecessors = list(recipe.predecessors(node_id))
+        is_reachable = False
+
+        for pred in predecessors:
+            # If parent is active (output exists) AND edge is activated -> Reachable
+            if pred in node_outputs and (pred, node_id) in activated_edges:
+                is_reachable = True
+                break
+
+            # If parent is NOT done and NOT skipped -> Potentially reachable
+            # We assume "not done" means it hasn't produced output yet and hasn't been skipped
+            if pred not in node_outputs and pred not in skipped_nodes:
+                # Parent is still pending, so we can't decide yet
+                return
+
+        # If we are here, it means all parents are either:
+        # 1. Done but didn't activate the edge to us.
+        # 2. Skipped themselves.
+        # AND none of them activated the edge to us.
+
+        if not is_reachable:
+            skipped_nodes.add(node_id)
+            await queue.put(EventFactory.create_node_skipped(run_id, node_id))
+
+            # Recursively prune successors
+            successors = list(recipe.successors(node_id))
+            for succ in successors:
+                await self._prune_branch(succ, run_id, queue, recipe, node_outputs, activated_edges, skipped_nodes)
 
     async def _execute_node(
         self,
