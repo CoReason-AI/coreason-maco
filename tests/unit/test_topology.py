@@ -21,7 +21,7 @@ from coreason_maco.engine.topology import (
 )
 
 
-@pytest.fixture  # type: ignore[misc]
+@pytest.fixture  # type: ignore
 def topology_engine() -> TopologyEngine:
     return TopologyEngine()
 
