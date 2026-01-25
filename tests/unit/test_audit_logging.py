@@ -1,9 +1,12 @@
-import pytest
 from unittest.mock import AsyncMock, MagicMock
-from coreason_maco.core.controller import WorkflowController
-from coreason_maco.core.interfaces import ServiceRegistry, AuditLogger, ToolExecutor, AgentExecutor
 
-@pytest.mark.asyncio
+import pytest
+
+from coreason_maco.core.controller import WorkflowController
+from coreason_maco.core.interfaces import AgentExecutor, AuditLogger, ServiceRegistry, ToolExecutor
+
+
+@pytest.mark.asyncio  # type: ignore
 async def test_audit_logging_integration() -> None:
     # Mocks
     mock_audit_logger = AsyncMock(spec=AuditLogger)
@@ -28,15 +31,8 @@ async def test_audit_logging_integration() -> None:
     # Workflow setup
     controller = WorkflowController(services=mock_services)
 
-    manifest = {
-        "name": "Test Workflow",
-        "nodes": [{"id": "node1", "type": "DEFAULT"}],
-        "edges": []
-    }
-    inputs = {
-        "user_id": "user123",
-        "trace_id": "trace456"
-    }
+    manifest = {"name": "Test Workflow", "nodes": [{"id": "node1", "type": "DEFAULT"}], "edges": []}
+    inputs = {"user_id": "user123", "trace_id": "trace456"}
 
     # Run
     events = []
