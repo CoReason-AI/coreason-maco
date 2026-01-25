@@ -104,5 +104,5 @@ def test_node_config_preserved(topology_engine: TopologyEngine) -> None:
     graph = topology_engine.build_graph(manifest)
 
     node_a = graph.nodes["A"]
-    assert node_a["model"] == "gpt-4"
-    assert node_a["temp"] == 0.7
+    assert node_a["config"]["model"] == "gpt-4"
+    assert node_a["config"]["temp"] == 0.7

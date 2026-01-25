@@ -15,15 +15,17 @@ from typing import Any, AsyncGenerator, Dict, Set
 
 import networkx as nx
 
-from coreason_maco.core.interfaces import ToolExecutor
+from coreason_maco.core.interfaces import AgentExecutor, ToolExecutor
 from coreason_maco.engine.topology import TopologyEngine
 from coreason_maco.events.protocol import (
+    CouncilVotePayload,
     ExecutionContext,
     GraphEvent,
     NodeCompleted,
     NodeRestored,
     NodeStarted,
 )
+from coreason_maco.strategies.council import CouncilConfig, CouncilStrategy
 
 
 class WorkflowRunner:
@@ -233,6 +235,32 @@ class WorkflowRunner:
                 # Without a tool name, we can't do anything.
                 # In strict mode this might be an error.
                 pass
+        elif node_type == "COUNCIL":
+            # Council Execution
+            # Copy config to avoid modifying the graph
+            c_config = config.copy()
+            prompt = c_config.pop("prompt", "Please analyze.")
+            council_config = CouncilConfig(**c_config)
+
+            agent_executor: AgentExecutor = context.agent_executor
+            strategy = CouncilStrategy(agent_executor)
+
+            result = await strategy.execute(prompt, council_config)
+            output = result.consensus
+
+            vote_payload = CouncilVotePayload(
+                node_id=node_id,
+                votes=result.individual_votes,
+            )
+            vote_event = GraphEvent(
+                event_type="COUNCIL_VOTE",
+                run_id=run_id,
+                node_id=node_id,
+                timestamp=time.time(),
+                payload=vote_payload.model_dump(),
+                visual_metadata={"widget": "VOTING_BOOTH"},
+            )
+            await queue.put(vote_event)
         else:
             # Fallback / Mock
             # Simulate work

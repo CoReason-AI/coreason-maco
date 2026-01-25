@@ -1,4 +1,5 @@
 from typing import List
+from unittest.mock import MagicMock
 
 import networkx as nx
 import pytest
@@ -9,7 +10,13 @@ from coreason_maco.events.protocol import ExecutionContext, GraphEvent
 
 @pytest.fixture  # type: ignore
 def mock_context() -> ExecutionContext:
-    return ExecutionContext(user_id="test_user", trace_id="test_trace", secrets_map={}, tool_registry={})
+    return ExecutionContext(
+        user_id="test_user",
+        trace_id="test_trace",
+        secrets_map={},
+        tool_registry={},
+        agent_executor=MagicMock(),
+    )
 
 
 @pytest.mark.asyncio  # type: ignore
