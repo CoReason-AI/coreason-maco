@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "coreason_maco"
 version = "0.1.0"
-description = "A new Python project."
+description = "Coreason MACO: A Multi-Agent Collaborative Orchestrator for robust strategic reasoning and graph-based execution."
 authors = ["Gowtham A Rao <gowtham.rao@coreason.ai>"]
 license = "Prosperity-3.0"
 readme = "README.md"
@@ -32,7 +32,7 @@ build-backend = "poetry.core.masonry.api"
 [project]
 name = "coreason_maco"
 version = "0.1.0"
-description = "A new Python project."
+description = "Coreason MACO: A Multi-Agent Collaborative Orchestrator for robust strategic reasoning and graph-based execution."
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [
