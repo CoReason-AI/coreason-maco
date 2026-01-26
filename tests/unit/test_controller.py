@@ -260,5 +260,4 @@ async def test_controller_context_construction() -> None:
     assert context_arg.secrets_map == {"api_key": "123"}
     # Verify tool registry is from services
     assert isinstance(context_arg.tool_registry, MockToolExecutor)
-    # Verify agent executor is from services
-    assert isinstance(context_arg.agent_executor, MagicMock)
+    # agent_executor is no longer in context

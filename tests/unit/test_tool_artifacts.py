@@ -9,7 +9,6 @@
 # Source Code: https://github.com/CoReason-AI/coreason_maco
 
 from typing import Any, Dict, List
-from unittest.mock import MagicMock
 
 import networkx as nx
 import pytest
@@ -44,7 +43,6 @@ async def test_tool_generates_artifact_event() -> None:
         trace_id="test_trace",
         secrets_map={},
         tool_registry=tool_executor,
-        agent_executor=MagicMock(),
     )
 
     # Create Graph
@@ -93,7 +91,6 @@ async def test_tool_generates_artifact_event_dict() -> None:
         trace_id="test_trace",
         secrets_map={},
         tool_registry=tool_executor,
-        agent_executor=MagicMock(),
     )
 
     # Create Graph

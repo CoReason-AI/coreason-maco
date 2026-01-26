@@ -76,7 +76,6 @@ async def test_concurrency_limit_enforcement() -> None:
         trace_id="test_trace",
         secrets_map={},
         tool_registry="mock_tool_registry",
-        agent_executor="mock_agent_executor",
     )
 
     # Run workflow

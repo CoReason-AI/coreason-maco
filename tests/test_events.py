@@ -77,7 +77,6 @@ def test_execution_context_creation() -> None:
         trace_id="trace-1",
         secrets_map={"API_KEY": "secret"},
         tool_registry={"some_tool": "callable"},
-        agent_executor={},
     )
     assert context.user_id == "user-1"
     assert context.secrets_map["API_KEY"] == "secret"
