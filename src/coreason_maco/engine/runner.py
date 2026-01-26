@@ -207,6 +207,9 @@ class WorkflowRunner:
                             elif "{{" in condition and "}}" in condition:
                                 # Jinja2 Expression
                                 activate = self.resolver.evaluate_boolean(condition, node_outputs)
+                            elif hasattr(output, "content") and str(output.content) == condition:
+                                # Automatic unwrapping for AgentResponse protocols
+                                activate = True
                             elif str(output) == condition:
                                 # Simple equality match (casted to string for safety)
                                 activate = True
