@@ -1,0 +1,59 @@
+from fastapi.testclient import TestClient
+
+from coreason_maco.server import app
+
+client = TestClient(app)
+
+
+def test_complex_workflow_execution() -> None:
+    """Test a workflow with multiple nodes and dependencies."""
+    manifest = {
+        "name": "Complex Workflow",
+        "nodes": [
+            {"id": "A", "type": "LLM", "config": {"prompt": "Start"}},
+            {"id": "B", "type": "TOOL", "config": {"tool_name": "Calculator"}},
+            {"id": "C", "type": "LLM", "config": {"prompt": "Summarize {{ B }}"}},
+        ],
+        "edges": [
+            {"source": "A", "target": "B"},
+            {"source": "B", "target": "C"},
+        ],
+    }
+    inputs = {"user_id": "u", "trace_id": "t"}
+
+    response = client.post("/execute", json={"manifest": manifest, "inputs": inputs})
+    assert response.status_code == 200
+
+    data = response.json()
+    events = data["events"]
+
+    # Analyze Event Sequence
+    assert len(events) > 0
+
+    # 1. Initialization
+    init_events = [e for e in events if e["event_type"] == "NODE_INIT"]
+    assert len(init_events) == 3
+
+    # 2. Execution order
+    completed_nodes = [e["node_id"] for e in events if e["event_type"] == "NODE_DONE"]
+
+    # A -> B -> C (Basic check, though parallelism might affect exact order of adjacent non-dependent nodes,
+    # here they are strictly dependent)
+    assert "A" in completed_nodes
+    assert "B" in completed_nodes
+    assert "C" in completed_nodes
+
+    # Verify strict order A -> B -> C
+    idx_a = completed_nodes.index("A")
+    idx_b = completed_nodes.index("B")
+    idx_c = completed_nodes.index("C")
+
+    assert idx_a < idx_b < idx_c
+
+    # 3. Check for Artifact Generation (from Tool)
+    # The Mock ServerToolExecutor returns a dict, but doesn't explicitly return an 'artifact' structure
+    # unless we change the mock. The current mock returns {"status": "executed"...}
+    # So we just verify the tool node completed successfully.
+
+    b_completion = next(e for e in events if e["event_type"] == "NODE_DONE" and e["node_id"] == "B")
+    assert "Server execution placeholder" in b_completion["payload"]["output_summary"]

@@ -43,7 +43,10 @@ class WorkflowController:
         self.max_parallel_agents = max_parallel_agents
 
     async def execute_recipe(
-        self, manifest: Dict[str, Any], inputs: Dict[str, Any]
+        self,
+        manifest: Dict[str, Any],
+        inputs: Dict[str, Any],
+        resume_snapshot: Dict[str, Any] | None = None,
     ) -> AsyncGenerator[GraphEvent, None]:
         """
         Executes a recipe based on the provided manifest and inputs.
@@ -51,6 +54,8 @@ class WorkflowController:
         Args:
             manifest: The raw recipe manifest dictionary.
             inputs: Input parameters for the execution.
+            resume_snapshot: Optional snapshot of a previous execution to resume from.
+                             Maps node_id -> output.
 
         Yields:
             GraphEvent: Real-time telemetry events.
@@ -103,7 +108,12 @@ class WorkflowController:
         run_id = None
 
         try:
-            async for event in runner.run_workflow(graph, context, initial_inputs=inputs):
+            async for event in runner.run_workflow(
+                graph,
+                context,
+                resume_snapshot=resume_snapshot,
+                initial_inputs=inputs,
+            ):
                 if run_id is None:
                     run_id = event.run_id
                 event_history.append(event.model_dump())
