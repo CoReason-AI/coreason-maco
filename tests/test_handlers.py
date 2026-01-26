@@ -67,3 +67,29 @@ async def test_human_node_handler_missing_manager(base_context: ExecutionContext
         await handler.execute(
             node_id="node-1", run_id="run-1", config={}, context=base_context, queue=queue, node_attributes={}
         )
+
+
+@pytest.mark.asyncio  # type: ignore
+async def test_human_node_handler_lazy_creation(base_context: ExecutionContext) -> None:
+    # Do NOT pre-inject the future
+    fm = FeedbackManager()
+    base_context.feedback_manager = fm
+
+    handler = HumanNodeHandler()
+    queue: asyncio.Queue[GraphEvent | None] = asyncio.Queue()
+
+    # Task to resolve the future after it is created by handler
+    async def resolve_later() -> None:
+        await asyncio.sleep(0.05)
+        # Verify it was created
+        assert "node-1" in fm
+        fm.set_result("node-1", "Approved")
+
+    task = asyncio.create_task(resolve_later())
+
+    result = await handler.execute(
+        node_id="node-1", run_id="run-1", config={}, context=base_context, queue=queue, node_attributes={}
+    )
+
+    assert result == "Approved"
+    await task

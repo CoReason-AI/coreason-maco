@@ -27,6 +27,11 @@ class MockToolExecutor(ToolExecutor):
 
 
 class MockServiceRegistry(ServiceRegistry):
+    def __init__(self) -> None:
+        from unittest.mock import AsyncMock
+
+        self._audit_logger = AsyncMock()
+
     @property
     def tool_registry(self) -> ToolExecutor:
         return MockToolExecutor()
@@ -37,9 +42,7 @@ class MockServiceRegistry(ServiceRegistry):
 
     @property
     def audit_logger(self) -> Any:
-        from unittest.mock import AsyncMock
-
-        return AsyncMock()
+        return self._audit_logger
 
     @property
     def agent_executor(self) -> AgentExecutor:
@@ -103,6 +106,7 @@ async def test_controller_execution_flow() -> None:
     # Verify calls
     mock_topology.build_graph.assert_called_once()
     mock_runner.run_workflow.assert_called_once()
+    services.audit_logger.log_workflow_execution.assert_called_once()
 
 
 @pytest.mark.asyncio  # type: ignore
@@ -265,3 +269,64 @@ async def test_controller_context_construction() -> None:
     # Verify tool registry is from services
     assert isinstance(context_arg.tool_registry, MockToolExecutor)
     # agent_executor is no longer in context
+
+
+@pytest.mark.asyncio  # type: ignore
+async def test_controller_no_audit_logger() -> None:
+    """Test controller execution when audit_logger is None."""
+    services = MockServiceRegistry()
+    services._audit_logger = None  # type: ignore
+
+    mock_runner = MagicMock()
+    mock_runner.run_workflow.return_value = MagicMock()
+
+    async def empty_gen(*args: Any, **kwargs: Any) -> AsyncGenerator[GraphEvent, None]:
+        if False:
+            yield
+
+    mock_runner.run_workflow.side_effect = empty_gen
+    MockRunnerCls = MagicMock(return_value=mock_runner)
+
+    controller = WorkflowController(services, runner_cls=MockRunnerCls)
+
+    manifest = {"name": "No Audit", "nodes": [], "edges": []}
+    inputs = {"user_id": "u", "trace_id": "t"}
+
+    async for _ in controller.execute_recipe(manifest, inputs):
+        pass
+
+    # Should run without error and just skip logging
+    mock_runner.run_workflow.assert_called_once()
+
+
+@pytest.mark.asyncio  # type: ignore
+async def test_controller_feedback_injection() -> None:
+    """Test injecting feedback_manager via inputs."""
+    services = MockServiceRegistry()
+    mock_runner = MagicMock()
+    mock_runner.run_workflow.return_value = MagicMock()
+
+    async def empty_gen(*args: Any, **kwargs: Any) -> AsyncGenerator[GraphEvent, None]:
+        if False:
+            yield
+
+    mock_runner.run_workflow.side_effect = empty_gen
+    MockRunnerCls = MagicMock(return_value=mock_runner)
+
+    controller = WorkflowController(services, runner_cls=MockRunnerCls)
+
+    manifest = {"name": "Feedback Test", "nodes": [], "edges": []}
+
+    from coreason_maco.events.protocol import FeedbackManager
+
+    # Mock FeedbackManager
+    feedback_manager = FeedbackManager()
+    inputs = {"user_id": "u", "trace_id": "t", "feedback_manager": feedback_manager}
+
+    async for _ in controller.execute_recipe(manifest, inputs):
+        pass
+
+    # Verify context has feedback_manager
+    call_args = mock_runner.run_workflow.call_args
+    context_arg = call_args[0][1]
+    assert context_arg.feedback_manager is feedback_manager

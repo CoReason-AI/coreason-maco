@@ -109,8 +109,9 @@ class WorkflowController:
             yield event
 
         # 5. Audit Logging
-        if self.services.audit_logger:
-            await self.services.audit_logger.log_workflow_execution(
+        audit_logger = self.services.audit_logger
+        if audit_logger:
+            await audit_logger.log_workflow_execution(
                 trace_id=context.trace_id,
                 run_id=run_id or "unknown",
                 manifest=manifest,
