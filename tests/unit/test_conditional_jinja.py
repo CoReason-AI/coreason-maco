@@ -2,6 +2,7 @@ from typing import List
 
 import networkx as nx
 import pytest
+
 from coreason_maco.engine.resolver import VariableResolver
 from coreason_maco.engine.runner import WorkflowRunner
 from coreason_maco.events.protocol import ExecutionContext, GraphEvent
