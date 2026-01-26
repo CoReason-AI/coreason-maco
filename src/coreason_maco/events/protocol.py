@@ -8,9 +8,44 @@
 #
 # Source Code: https://github.com/CoReason-AI/coreason_maco
 
+import asyncio
 from typing import Any, Dict, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
+
+
+class FeedbackManager:
+    """
+    Manages futures for human-in-the-loop feedback.
+    Wraps a dictionary to ensure reference passing in Pydantic.
+    """
+
+    def __init__(self) -> None:
+        self.futures: Dict[str, asyncio.Future[Any]] = {}
+
+    def get(self, node_id: str) -> Optional[asyncio.Future[Any]]:
+        return self.futures.get(node_id)
+
+    def create(self, node_id: str, loop: asyncio.AbstractEventLoop | None = None) -> asyncio.Future[Any]:
+        if loop is None:
+            loop = asyncio.get_running_loop()
+        f: asyncio.Future[Any] = loop.create_future()
+        self.futures[node_id] = f
+        return f
+
+    def set_result(self, node_id: str, result: Any) -> None:
+        if node_id in self.futures:
+            if not self.futures[node_id].done():
+                self.futures[node_id].set_result(result)
+
+    def __contains__(self, item: str) -> bool:
+        return item in self.futures
+
+    def __getitem__(self, item: str) -> asyncio.Future[Any]:
+        return self.futures[item]
+
+    def __setitem__(self, key: str, value: asyncio.Future[Any]) -> None:
+        self.futures[key] = value
 
 
 class ExecutionContext(BaseModel):
@@ -25,7 +60,7 @@ class ExecutionContext(BaseModel):
     trace_id: str
     secrets_map: Dict[str, str]  # Decrypted secrets passed from Vault
     tool_registry: Any  # Interface for coreason-mcp (The Tools)
-    feedback_events: Dict[str, Any] = Field(default_factory=dict)
+    feedback_manager: FeedbackManager = Field(default_factory=FeedbackManager)
 
 
 class GraphEvent(BaseModel):

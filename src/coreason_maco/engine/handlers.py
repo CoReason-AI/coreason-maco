@@ -184,19 +184,16 @@ class HumanNodeHandler:
         queue: asyncio.Queue[GraphEvent | None],
         node_attributes: Dict[str, Any],
     ) -> Any:
-        feedback_events = getattr(context, "feedback_events", {})
+        feedback_manager = getattr(context, "feedback_manager", None)
 
-        # Ensure feedback_events is a dict (it should be)
-        if not isinstance(feedback_events, dict):
-            # Just in case, though controller ensures it.
-            # If strictly typed as Dict, this check is redundant but safe.
-            pass
+        if not feedback_manager:
+            raise ValueError("FeedbackManager not available in ExecutionContext")
 
-        if node_id not in feedback_events:
+        if node_id not in feedback_manager:
             loop = asyncio.get_running_loop()
-            feedback_events[node_id] = loop.create_future()
+            feedback_manager.create(node_id, loop)
 
-        future = feedback_events[node_id]
+        future = feedback_manager[node_id]
 
         # Wait for external input
         result = await future

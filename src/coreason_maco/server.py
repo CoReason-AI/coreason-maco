@@ -21,6 +21,7 @@ from pydantic import BaseModel
 
 from coreason_maco.core.controller import WorkflowController
 from coreason_maco.core.interfaces import ServiceRegistry
+from coreason_maco.events.protocol import FeedbackManager
 from coreason_maco.events.sink import AsyncEventSink, LoggingEventSink, RedisEventSink
 from coreason_maco.services import RemoteAgentExecutor, RemoteAuditLogger
 
@@ -113,11 +114,11 @@ async def start_execution(req: StartExecutionRequest) -> StartExecutionResponse:
     execution_id = str(uuid.uuid4())
 
     # Initialize Feedback Mechanism
-    feedback_events: Dict[str, asyncio.Future[Any]] = {}
+    feedback_manager = FeedbackManager()
 
-    # Inject feedback_events into inputs so Controller picks it up
+    # Inject feedback_manager into inputs so Controller picks it up
     inputs = req.inputs.copy()
-    inputs["feedback_events"] = feedback_events
+    inputs["feedback_manager"] = feedback_manager
 
     # Initialize Services
     services = ServiceRegistryImpl()
@@ -139,7 +140,7 @@ async def start_execution(req: StartExecutionRequest) -> StartExecutionResponse:
 
     # Store in Registry
     job_registry[execution_id] = {
-        "feedback_events": feedback_events,
+        "feedback_manager": feedback_manager,
         "status": "running",
         "task": task,
     }
@@ -153,17 +154,16 @@ async def resume_execution(execution_id: str, req: ResumeExecutionRequest) -> Di
     if not job:
         raise HTTPException(status_code=404, detail="Execution not found or already completed")
 
-    feedback_events = job["feedback_events"]
+    feedback_manager: FeedbackManager = job["feedback_manager"]
 
-    if req.node_id not in feedback_events:
+    if req.node_id not in feedback_manager:
         # Create pre-approved future
         loop = asyncio.get_running_loop()
-        f = loop.create_future()
+        f = feedback_manager.create(req.node_id, loop)
         f.set_result(req.outcome)
-        feedback_events[req.node_id] = f
         return {"status": "resumed (pre-approved)"}
 
-    future = feedback_events[req.node_id]
+    future = feedback_manager[req.node_id]
     if future.done():
         raise HTTPException(status_code=400, detail=f"Node {req.node_id} already received feedback")
 
@@ -180,8 +180,6 @@ async def cancel_execution(execution_id: str) -> Dict[str, str]:
     task = job.get("task")
     if task:
         task.cancel()
-        # Remove immediately or let finally block handle it?
-        # finally block will run when task cancels.
         return {"status": "cancelled"}
 
     return {"status": "failed to cancel"}

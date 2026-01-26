@@ -14,7 +14,7 @@ from typing import Any
 import pytest
 
 from coreason_maco.engine.handlers import HumanNodeHandler
-from coreason_maco.events.protocol import ExecutionContext, GraphEvent
+from coreason_maco.events.protocol import ExecutionContext, FeedbackManager, GraphEvent
 
 
 @pytest.fixture  # type: ignore
@@ -32,8 +32,10 @@ async def test_human_node_handler_waits(base_context: ExecutionContext) -> None:
     loop = asyncio.get_running_loop()
     future: asyncio.Future[Any] = loop.create_future()
 
-    # Inject future
-    base_context.feedback_events = {"node-1": future}
+    # Inject future via Manager
+    fm = FeedbackManager()
+    fm.futures["node-1"] = future
+    base_context.feedback_manager = fm
 
     handler = HumanNodeHandler()
     queue: asyncio.Queue[GraphEvent | None] = asyncio.Queue()
@@ -54,11 +56,14 @@ async def test_human_node_handler_waits(base_context: ExecutionContext) -> None:
 
 
 @pytest.mark.asyncio  # type: ignore
-async def test_human_node_handler_missing_event(base_context: ExecutionContext) -> None:
+async def test_human_node_handler_missing_manager(base_context: ExecutionContext) -> None:
     handler = HumanNodeHandler()
     queue: asyncio.Queue[GraphEvent | None] = asyncio.Queue()
 
-    with pytest.raises(ValueError, match="No feedback channel"):
+    # Ensure no manager
+    base_context.feedback_manager = None  # type: ignore
+
+    with pytest.raises(ValueError, match="FeedbackManager not available"):
         await handler.execute(
             node_id="node-1", run_id="run-1", config={}, context=base_context, queue=queue, node_attributes={}
         )

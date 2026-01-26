@@ -16,6 +16,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
+from coreason_maco.events.protocol import FeedbackManager
 from coreason_maco.server import app, job_registry
 
 
@@ -80,8 +81,11 @@ def test_resume_execution(client: TestClient) -> None:
     mock_future = MagicMock()
     mock_future.done.return_value = False
 
+    fm = FeedbackManager()
+    fm.futures["node-1"] = mock_future
+
     job_registry[exec_id] = {
-        "feedback_events": {"node-1": mock_future},
+        "feedback_manager": fm,
         "status": "running",
     }
 
@@ -96,7 +100,8 @@ def test_resume_execution(client: TestClient) -> None:
 
 def test_resume_execution_pre_approve(client: TestClient) -> None:
     exec_id = "test-resume-pre"
-    job_registry[exec_id] = {"feedback_events": {}, "status": "running"}
+    fm = FeedbackManager()
+    job_registry[exec_id] = {"feedback_manager": fm, "status": "running"}
 
     resp = client.post(
         f"/execution/{exec_id}/resume",
@@ -104,27 +109,13 @@ def test_resume_execution_pre_approve(client: TestClient) -> None:
     )
 
     assert resp.status_code == 200
-    events = job_registry[exec_id]["feedback_events"]
-    assert "node-2" in events
+    assert "node-2" in fm
     # Here the server creates a real Future.
-    # Since we are asserting result, we assume it's set.
-    # Future objects might be tricky if not in loop, but synchronous future state check should be fine.
-    # The server creates it using asyncio.get_running_loop().
-    # TestClient server runs in a loop.
-
-    # We can't easily check .result() if we are in a different thread without locking issues or loop issues.
-    # But we can check it's a Future and it is done.
-    future = events["node-2"]
+    # We assume it's set.
+    future = fm["node-2"]
     assert future.done()
-    # future.result() might raise error if loop is closed? No, result() is just value.
-    # Assuming future implementation is standard.
-    # However, if it's an asyncio.Future, it is bound to a loop.
-    # We'll skip result check if it's flaky, but .done() is safe.
-    # Actually, future.result() should work.
-    try:
-        assert future.result() == "approved"
-    except Exception:
-        pass
+    # Check result safely if possible, or just assume done means done.
+    # Since we set it in the handler (synchronously in TestClient context), it should be set.
 
 
 def test_cancel_execution(client: TestClient) -> None:
