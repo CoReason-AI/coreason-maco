@@ -172,3 +172,32 @@ class DefaultNodeHandler:
         await asyncio.sleep(0.01)
         # Return mock_output from node attributes
         return node_attributes.get("mock_output", None)
+
+
+class HumanNodeHandler:
+    async def execute(
+        self,
+        node_id: str,
+        run_id: str,
+        config: Dict[str, Any],
+        context: ExecutionContext,
+        queue: asyncio.Queue[GraphEvent | None],
+        node_attributes: Dict[str, Any],
+    ) -> Any:
+        feedback_events = getattr(context, "feedback_events", {})
+
+        # Ensure feedback_events is a dict (it should be)
+        if not isinstance(feedback_events, dict):
+            # Just in case, though controller ensures it.
+            # If strictly typed as Dict, this check is redundant but safe.
+            pass
+
+        if node_id not in feedback_events:
+            loop = asyncio.get_running_loop()
+            feedback_events[node_id] = loop.create_future()
+
+        future = feedback_events[node_id]
+
+        # Wait for external input
+        result = await future
+        return result

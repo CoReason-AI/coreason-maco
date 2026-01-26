@@ -79,6 +79,7 @@ class WorkflowController:
         user_id = inputs.get("user_id")
         trace_id = inputs.get("trace_id")
         secrets_map = inputs.get("secrets_map", {})
+        feedback_events = inputs.get("feedback_events", {})
 
         if not user_id:
             raise ValueError("user_id is required in inputs")
@@ -90,6 +91,7 @@ class WorkflowController:
             trace_id=trace_id,
             secrets_map=secrets_map,
             tool_registry=self.services.tool_registry,
+            feedback_events=feedback_events,
         )
 
         # 5. Run Workflow

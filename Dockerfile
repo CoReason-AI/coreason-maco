@@ -35,3 +35,11 @@ COPY --from=builder /wheels /wheels
 
 # Install the application wheel
 RUN pip install --no-cache-dir /wheels/*.whl
+
+# Environment Variables
+ENV REDIS_URL="redis://localhost:6379"
+ENV NEXUS_URL="http://nexus:8000"
+ENV CORTEX_URL="http://cortex:8000"
+
+# Command to run the application
+CMD ["uvicorn", "coreason_maco.server:app", "--host", "0.0.0.0", "--port", "8000"]

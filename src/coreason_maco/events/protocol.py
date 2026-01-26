@@ -19,12 +19,13 @@ class ExecutionContext(BaseModel):
     Prevents MACO from needing direct access to Auth or DB drivers.
     """
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     user_id: str
     trace_id: str
     secrets_map: Dict[str, str]  # Decrypted secrets passed from Vault
     tool_registry: Any  # Interface for coreason-mcp (The Tools)
+    feedback_events: Dict[str, Any] = Field(default_factory=dict)
 
 
 class GraphEvent(BaseModel):
