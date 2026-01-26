@@ -77,7 +77,8 @@ async def test_controller_execution_flow() -> None:
 
     mock_runner.run_workflow.side_effect = mock_stream
 
-    controller = WorkflowController(services, topology=mock_topology, runner=mock_runner)
+    MockRunnerCls = MagicMock(return_value=mock_runner)
+    controller = WorkflowController(services, topology=mock_topology, runner_cls=MockRunnerCls)
 
     manifest = {
         "name": "Test Recipe",
@@ -172,7 +173,8 @@ async def test_controller_runtime_error() -> None:
     services = MockServiceRegistry()
     mock_runner = MagicMock()
     mock_runner.run_workflow.side_effect = Exception("Runtime Failure")
-    controller = WorkflowController(services, runner=mock_runner)
+    MockRunnerCls = MagicMock(return_value=mock_runner)
+    controller = WorkflowController(services, runner_cls=MockRunnerCls)
 
     manifest = {
         "name": "Broken Recipe",
@@ -198,7 +200,8 @@ async def test_controller_empty_graph() -> None:
         yield  # Empty generator
 
     mock_runner.run_workflow.side_effect = mock_stream
-    controller = WorkflowController(services, topology=mock_topology, runner=mock_runner)
+    MockRunnerCls = MagicMock(return_value=mock_runner)
+    controller = WorkflowController(services, topology=mock_topology, runner_cls=MockRunnerCls)
 
     manifest = {
         "name": "Empty Recipe",
@@ -230,7 +233,8 @@ async def test_controller_context_construction() -> None:
 
     mock_runner.run_workflow.side_effect = empty_gen
 
-    controller = WorkflowController(services, runner=mock_runner)
+    MockRunnerCls = MagicMock(return_value=mock_runner)
+    controller = WorkflowController(services, runner_cls=MockRunnerCls)
 
     manifest = {
         "name": "Context Test",
