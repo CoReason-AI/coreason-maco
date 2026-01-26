@@ -65,7 +65,9 @@ class MockToolExecutor(ToolExecutor):
 
 class MockServiceRegistry(ServiceRegistry):
     def __init__(self, agent_executor: AgentExecutor | None = None):
-        self._agent_executor = agent_executor or MockAgentExecutor()
+        # Allow None for testing missing executor
+        self._agent_executor = agent_executor if agent_executor is not None else MockAgentExecutor()
+        self._force_none = agent_executor is None and isinstance(agent_executor, type(None))
 
     @property
     def tool_registry(self) -> ToolExecutor:
@@ -194,3 +196,55 @@ async def test_parallel_council_nodes() -> None:
     # Check B
     vote_b = next(e for e in vote_events if e.node_id == "Council_B")
     assert "claude" in vote_b.payload["votes"]
+
+
+@pytest.mark.asyncio  # type: ignore
+async def test_council_node_missing_executor() -> None:
+    """Test that missing agent_executor raises ValueError for Council node."""
+    # To simulate missing executor, we need to pass None to WorkflowRunner.
+    # We can do this by mocking ServiceRegistry to return None.
+
+    # Custom registry that returns None
+    class NoneExecutorRegistry(ServiceRegistry):
+        @property
+        def tool_registry(self) -> ToolExecutor:
+            return MockToolExecutor()
+
+        @property
+        def auth_manager(self) -> Any:
+            return MagicMock()
+
+        @property
+        def audit_logger(self) -> Any:
+            return MagicMock()
+
+        @property
+        def agent_executor(self) -> AgentExecutor:
+            return None  # type: ignore
+
+    services = NoneExecutorRegistry()
+    controller = WorkflowController(services)
+
+    manifest = {
+        "name": "Missing Exec Council",
+        "nodes": [
+            {
+                "id": "node",
+                "type": "COUNCIL",
+                "config": {"agents": [{"model": "gpt-4"}], "synthesizer": {"model": "judge"}, "prompt": "Analyze"},
+            },
+        ],
+        "edges": [],
+    }
+    inputs = {"user_id": "u", "trace_id": "t"}
+
+    with pytest.raises((ValueError, ExceptionGroup)) as excinfo:
+        async for _ in controller.execute_recipe(manifest, inputs):
+            pass
+
+    # Check error message
+    # ExceptionGroup usually wraps it
+    if isinstance(excinfo.value, ExceptionGroup):
+        assert any("AgentExecutor is required" in str(e) for e in excinfo.value.exceptions)
+    else:
+        assert "AgentExecutor is required" in str(excinfo.value)

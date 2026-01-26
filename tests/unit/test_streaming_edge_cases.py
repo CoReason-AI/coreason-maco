@@ -20,7 +20,7 @@ from coreason_maco.events.protocol import ExecutionContext, GraphEvent
 
 
 @pytest.fixture  # type: ignore
-def mock_context() -> ExecutionContext:
+def mock_agent_executor() -> Any:
     agent_executor = MagicMock()
 
     # Default invoke behavior
@@ -30,29 +30,32 @@ def mock_context() -> ExecutionContext:
         return response
 
     agent_executor.invoke = AsyncMock(side_effect=mock_invoke)
+    return agent_executor
 
+
+@pytest.fixture  # type: ignore
+def mock_context() -> ExecutionContext:
     return ExecutionContext(
         user_id="test_user",
         trace_id="test_trace",
         secrets_map={},
         tool_registry=MagicMock(),
-        agent_executor=agent_executor,
     )
 
 
 @pytest.mark.asyncio  # type: ignore
-async def test_stream_returns_non_generator(mock_context: ExecutionContext) -> None:
+async def test_stream_returns_non_generator(mock_context: ExecutionContext, mock_agent_executor: Any) -> None:
     """
     Test fallback when stream() returns something that is not an async generator
     (e.g., a string, a list, or None).
     """
     # Mock stream to return a string instead of a generator
-    mock_context.agent_executor.stream = MagicMock(return_value="Not a generator")
+    mock_agent_executor.stream = MagicMock(return_value="Not a generator")
 
     graph = nx.DiGraph()
     graph.add_node("A", type="LLM", config={"prompt": "Hello"})
 
-    runner = WorkflowRunner()
+    runner = WorkflowRunner(agent_executor=mock_agent_executor)
     events: List[GraphEvent] = []
 
     async for event in runner.run_workflow(graph, mock_context):
@@ -61,21 +64,21 @@ async def test_stream_returns_non_generator(mock_context: ExecutionContext) -> N
     # Should fall back to invoke
     node_done = next(e for e in events if e.event_type == "NODE_DONE" and e.node_id == "A")
     assert node_done.payload["output_summary"] == "Invoke: Hello"
-    mock_context.agent_executor.invoke.assert_called_once()
+    mock_agent_executor.invoke.assert_called_once()
 
 
 @pytest.mark.asyncio  # type: ignore
-async def test_stream_setup_type_error(mock_context: ExecutionContext) -> None:
+async def test_stream_setup_type_error(mock_context: ExecutionContext, mock_agent_executor: Any) -> None:
     """
     Test fallback when stream() raises TypeError during call (e.g. invalid args).
     """
     # Mock stream to raise TypeError
-    mock_context.agent_executor.stream = MagicMock(side_effect=TypeError("Invalid args"))
+    mock_agent_executor.stream = MagicMock(side_effect=TypeError("Invalid args"))
 
     graph = nx.DiGraph()
     graph.add_node("A", type="LLM", config={"prompt": "Hello"})
 
-    runner = WorkflowRunner()
+    runner = WorkflowRunner(agent_executor=mock_agent_executor)
     events: List[GraphEvent] = []
 
     async for event in runner.run_workflow(graph, mock_context):
@@ -84,11 +87,11 @@ async def test_stream_setup_type_error(mock_context: ExecutionContext) -> None:
     # Should fall back to invoke
     node_done = next(e for e in events if e.event_type == "NODE_DONE" and e.node_id == "A")
     assert node_done.payload["output_summary"] == "Invoke: Hello"
-    mock_context.agent_executor.invoke.assert_called_once()
+    mock_agent_executor.invoke.assert_called_once()
 
 
 @pytest.mark.asyncio  # type: ignore
-async def test_stream_mid_execution_error(mock_context: ExecutionContext) -> None:
+async def test_stream_mid_execution_error(mock_context: ExecutionContext, mock_agent_executor: Any) -> None:
     """
     Test fallback when the generator raises a caught exception (AttributeError)
     during iteration.
@@ -98,12 +101,12 @@ async def test_stream_mid_execution_error(mock_context: ExecutionContext) -> Non
         yield "Chunk1"
         raise AttributeError("Something missing")
 
-    mock_context.agent_executor.stream = MagicMock(side_effect=broken_gen)
+    mock_agent_executor.stream = MagicMock(side_effect=broken_gen)
 
     graph = nx.DiGraph()
     graph.add_node("A", type="LLM", config={"prompt": "Hello"})
 
-    runner = WorkflowRunner()
+    runner = WorkflowRunner(agent_executor=mock_agent_executor)
     events: List[GraphEvent] = []
 
     async for event in runner.run_workflow(graph, mock_context):
@@ -117,11 +120,11 @@ async def test_stream_mid_execution_error(mock_context: ExecutionContext) -> Non
     # Should fall back to invoke and succeed
     node_done = next(e for e in events if e.event_type == "NODE_DONE" and e.node_id == "A")
     assert node_done.payload["output_summary"] == "Invoke: Hello"
-    mock_context.agent_executor.invoke.assert_called_once()
+    mock_agent_executor.invoke.assert_called_once()
 
 
 @pytest.mark.asyncio  # type: ignore
-async def test_empty_stream(mock_context: ExecutionContext) -> None:
+async def test_empty_stream(mock_context: ExecutionContext, mock_agent_executor: Any) -> None:
     """
     Test that an empty stream (yields nothing) returns empty string and does NOT
     fallback to invoke (because it was a valid generator).
@@ -131,12 +134,12 @@ async def test_empty_stream(mock_context: ExecutionContext) -> None:
         if False:
             yield "Nothing"
 
-    mock_context.agent_executor.stream = MagicMock(side_effect=empty_gen)
+    mock_agent_executor.stream = MagicMock(side_effect=empty_gen)
 
     graph = nx.DiGraph()
     graph.add_node("A", type="LLM", config={"prompt": "Hello"})
 
-    runner = WorkflowRunner()
+    runner = WorkflowRunner(agent_executor=mock_agent_executor)
     events: List[GraphEvent] = []
 
     async for event in runner.run_workflow(graph, mock_context):
@@ -147,11 +150,11 @@ async def test_empty_stream(mock_context: ExecutionContext) -> None:
     assert node_done.payload["output_summary"] == ""
 
     # Invoke should NOT be called because stream succeeded (produced valid empty result)
-    mock_context.agent_executor.invoke.assert_not_called()
+    mock_agent_executor.invoke.assert_not_called()
 
 
 @pytest.mark.asyncio  # type: ignore
-async def test_parallel_streaming_nodes(mock_context: ExecutionContext) -> None:
+async def test_parallel_streaming_nodes(mock_context: ExecutionContext, mock_agent_executor: Any) -> None:
     """
     Test multiple nodes streaming in parallel.
     """
@@ -163,7 +166,7 @@ async def test_parallel_streaming_nodes(mock_context: ExecutionContext) -> None:
             await asyncio.sleep(0.01)  # Simulate network delay to encourage interleaving
             yield c
 
-    mock_context.agent_executor.stream = MagicMock(side_effect=dynamic_stream)
+    mock_agent_executor.stream = MagicMock(side_effect=dynamic_stream)
 
     graph = nx.DiGraph()
     graph.add_node("START", type="START")
@@ -176,7 +179,7 @@ async def test_parallel_streaming_nodes(mock_context: ExecutionContext) -> None:
     graph.add_edge("START", "C")
 
     # Run them in parallel
-    runner = WorkflowRunner(max_parallel_agents=3)
+    runner = WorkflowRunner(max_parallel_agents=3, agent_executor=mock_agent_executor)
     events: List[GraphEvent] = []
 
     async for event in runner.run_workflow(graph, mock_context):

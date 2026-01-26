@@ -44,7 +44,6 @@ def mock_context() -> ExecutionContext:
         trace_id="test_trace",
         secrets_map={},
         tool_registry=tool_registry,
-        agent_executor=agent_executor,
     )
 
 

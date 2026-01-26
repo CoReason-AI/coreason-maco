@@ -8,7 +8,7 @@
 #
 # Source Code: https://github.com/CoReason-AI/coreason_maco
 
-from typing import List
+from typing import Any, List
 from unittest.mock import AsyncMock, MagicMock
 
 import networkx as nx
@@ -20,16 +20,19 @@ from coreason_maco.events.protocol import ExecutionContext, GraphEvent, NodeInit
 
 @pytest.fixture  # type: ignore
 def mock_context() -> ExecutionContext:
-    agent_executor = MagicMock()
-    # Ensure invoke is an async method (AsyncMock)
-    agent_executor.invoke = AsyncMock(return_value=MagicMock(content="Mocked Response"))
     return ExecutionContext(
         user_id="test_user",
         trace_id="test_trace",
         secrets_map={},
         tool_registry={},
-        agent_executor=agent_executor,
     )
+
+
+@pytest.fixture  # type: ignore
+def mock_agent_executor() -> Any:
+    agent_executor = MagicMock()
+    agent_executor.invoke = AsyncMock(return_value=MagicMock(content="Mocked Response"))
+    return agent_executor
 
 
 @pytest.mark.asyncio  # type: ignore
@@ -57,14 +60,14 @@ async def test_node_init_defaults(mock_context: ExecutionContext) -> None:
 
 
 @pytest.mark.asyncio  # type: ignore
-async def test_node_init_custom_types(mock_context: ExecutionContext) -> None:
+async def test_node_init_custom_types(mock_context: ExecutionContext, mock_agent_executor: Any) -> None:
     """Test nodes with various custom types. Ensure graph is connected."""
     graph = nx.DiGraph()
     graph.add_node("AgentNode", type="LLM")
     graph.add_node("ToolNode", type="TOOL")
     graph.add_edge("AgentNode", "ToolNode")
 
-    runner = WorkflowRunner()
+    runner = WorkflowRunner(agent_executor=mock_agent_executor)
     events: List[GraphEvent] = []
 
     async for event in runner.run_workflow(graph, mock_context):
@@ -114,7 +117,7 @@ async def test_node_init_with_resume(mock_context: ExecutionContext) -> None:
 
 
 @pytest.mark.asyncio  # type: ignore
-async def test_complex_graph_initialization(mock_context: ExecutionContext) -> None:
+async def test_complex_graph_initialization(mock_context: ExecutionContext, mock_agent_executor: Any) -> None:
     """Test a diamond graph with mixed types."""
     graph = nx.DiGraph()
     # A -> B, A -> C, B -> D, C -> D
@@ -128,7 +131,7 @@ async def test_complex_graph_initialization(mock_context: ExecutionContext) -> N
     graph.add_edge("B", "D")
     graph.add_edge("C", "D")
 
-    runner = WorkflowRunner()
+    runner = WorkflowRunner(agent_executor=mock_agent_executor)
     events: List[GraphEvent] = []
 
     async for event in runner.run_workflow(graph, mock_context):

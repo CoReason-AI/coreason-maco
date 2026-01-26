@@ -19,7 +19,7 @@ from coreason_maco.events.protocol import ExecutionContext, GraphEvent
 
 
 @pytest.fixture  # type: ignore
-def mock_context() -> ExecutionContext:
+def mock_agent_executor() -> Any:
     agent_executor = MagicMock()
 
     # Mock invoke to return an object with .content
@@ -29,18 +29,21 @@ def mock_context() -> ExecutionContext:
         return response
 
     agent_executor.invoke = AsyncMock(side_effect=mock_invoke)
+    return agent_executor
 
+
+@pytest.fixture  # type: ignore
+def mock_context() -> ExecutionContext:
     return ExecutionContext(
         user_id="test_user",
         trace_id="test_trace",
         secrets_map={},
         tool_registry=MagicMock(),
-        agent_executor=agent_executor,
     )
 
 
 @pytest.mark.asyncio  # type: ignore
-async def test_runner_executes_council_node(mock_context: ExecutionContext) -> None:
+async def test_runner_executes_council_node(mock_context: ExecutionContext, mock_agent_executor: Any) -> None:
     """
     Test that the runner correctly executes a COUNCIL node.
     """
@@ -54,7 +57,7 @@ async def test_runner_executes_council_node(mock_context: ExecutionContext) -> N
 
     graph.add_node("CouncilNode", type="COUNCIL", config=council_config)
 
-    runner = WorkflowRunner()
+    runner = WorkflowRunner(agent_executor=mock_agent_executor)
     events: List[GraphEvent] = []
 
     async for event in runner.run_workflow(graph, mock_context):

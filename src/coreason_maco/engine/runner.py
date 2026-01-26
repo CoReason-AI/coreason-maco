@@ -15,6 +15,7 @@ from typing import Any, AsyncGenerator, Dict, Set
 
 import networkx as nx
 
+from coreason_maco.core.interfaces import AgentExecutor
 from coreason_maco.engine.handlers import (
     CouncilNodeHandler,
     DefaultNodeHandler,
@@ -33,7 +34,12 @@ class WorkflowRunner:
     The main execution engine that iterates through the DAG.
     """
 
-    def __init__(self, topology: TopologyEngine | None = None, max_parallel_agents: int = 10) -> None:
+    def __init__(
+        self,
+        topology: TopologyEngine | None = None,
+        max_parallel_agents: int = 10,
+        agent_executor: AgentExecutor | None = None,
+    ) -> None:
         if max_parallel_agents < 1:
             raise ValueError("max_parallel_agents must be >= 1")
         self.topology = topology or TopologyEngine()
@@ -42,8 +48,8 @@ class WorkflowRunner:
         self.resolver = VariableResolver()
         self.handlers: Dict[str, NodeHandler] = {
             "TOOL": ToolNodeHandler(),
-            "LLM": LLMNodeHandler(),
-            "COUNCIL": CouncilNodeHandler(),
+            "LLM": LLMNodeHandler(agent_executor),
+            "COUNCIL": CouncilNodeHandler(agent_executor),
         }
         self.default_handler = DefaultNodeHandler()
 
