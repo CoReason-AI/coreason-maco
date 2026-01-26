@@ -204,6 +204,9 @@ class WorkflowRunner:
                             if condition is None:
                                 # Default edge always active
                                 activate = True
+                            elif "{{" in condition and "}}" in condition:
+                                # Jinja2 Expression
+                                activate = self.resolver.evaluate_boolean(condition, node_outputs)
                             elif str(output) == condition:
                                 # Simple equality match (casted to string for safety)
                                 activate = True
