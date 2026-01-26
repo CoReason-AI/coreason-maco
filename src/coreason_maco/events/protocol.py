@@ -25,7 +25,6 @@ class ExecutionContext(BaseModel):
     trace_id: str
     secrets_map: Dict[str, str]  # Decrypted secrets passed from Vault
     tool_registry: Any  # Interface for coreason-mcp (The Tools)
-    agent_executor: Any  # Interface for coreason-cortex (The Agents)
 
 
 class GraphEvent(BaseModel):

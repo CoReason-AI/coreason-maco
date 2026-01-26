@@ -60,14 +60,14 @@ def test_graph_event_edge_boundary_timestamps() -> None:
 
 def test_execution_context_edge_empty_map() -> None:
     """Test ExecutionContext with empty secrets map."""
-    ctx = ExecutionContext(user_id="u1", trace_id="t1", secrets_map={}, tool_registry="something", agent_executor={})
+    ctx = ExecutionContext(user_id="u1", trace_id="t1", secrets_map={}, tool_registry="something")
     assert ctx.secrets_map == {}
 
 
 def test_execution_context_complex_object_registry() -> None:
     """Test that tool_registry can hold a complex object instance."""
     registry = MockToolRegistry()
-    ctx = ExecutionContext(user_id="u1", trace_id="t1", secrets_map={}, tool_registry=registry, agent_executor={})
+    ctx = ExecutionContext(user_id="u1", trace_id="t1", secrets_map={}, tool_registry=registry)
     assert ctx.tool_registry is registry
     assert ctx.tool_registry.execute() == "executed"
 

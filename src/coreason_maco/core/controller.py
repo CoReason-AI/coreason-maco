@@ -39,7 +39,11 @@ class WorkflowController:
         """
         self.services = services
         self.topology = topology or TopologyEngine()
-        self.runner = runner or WorkflowRunner(topology=self.topology, max_parallel_agents=max_parallel_agents)
+        self.runner = runner or WorkflowRunner(
+            topology=self.topology,
+            max_parallel_agents=max_parallel_agents,
+            agent_executor=services.agent_executor,
+        )
 
     async def execute_recipe(
         self, manifest: Dict[str, Any], inputs: Dict[str, Any]
@@ -81,7 +85,6 @@ class WorkflowController:
             trace_id=trace_id,
             secrets_map=secrets_map,
             tool_registry=self.services.tool_registry,
-            agent_executor=self.services.agent_executor,
         )
 
         # 4. Run Workflow

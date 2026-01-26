@@ -87,6 +87,9 @@ class ToolNodeHandler:
 
 
 class LLMNodeHandler:
+    def __init__(self, agent_executor: AgentExecutor | None = None) -> None:
+        self.agent_executor = agent_executor
+
     async def execute(
         self,
         node_id: str,
@@ -100,7 +103,10 @@ class LLMNodeHandler:
         # Assuming 'prompt' or 'input' is in config, fallback to args
         prompt = config.get("prompt", config.get("args", {}).get("prompt", "Analyze this."))
 
-        agent_executor: AgentExecutor = context.agent_executor
+        if not self.agent_executor:
+            raise ValueError("AgentExecutor is required for LLM nodes but was not provided.")
+
+        agent_executor = self.agent_executor
 
         # Try streaming first
         try:
@@ -122,6 +128,9 @@ class LLMNodeHandler:
 
 
 class CouncilNodeHandler:
+    def __init__(self, agent_executor: AgentExecutor | None = None) -> None:
+        self.agent_executor = agent_executor
+
     async def execute(
         self,
         node_id: str,
@@ -136,8 +145,10 @@ class CouncilNodeHandler:
         prompt = c_config.pop("prompt", "Please analyze.")
         council_config = CouncilConfig(**c_config)
 
-        agent_executor = context.agent_executor
-        strategy = CouncilStrategy(agent_executor)
+        if not self.agent_executor:
+            raise ValueError("AgentExecutor is required for Council nodes but was not provided.")
+
+        strategy = CouncilStrategy(self.agent_executor)
 
         result = await strategy.execute(prompt, council_config)
 

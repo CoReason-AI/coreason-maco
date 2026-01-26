@@ -10,7 +10,6 @@
 
 import asyncio
 from typing import Any, Dict, List
-from unittest.mock import MagicMock
 
 import networkx as nx
 import pytest
@@ -27,7 +26,6 @@ def mock_context() -> ExecutionContext:
         trace_id="test_trace",
         secrets_map={},
         tool_registry={},
-        agent_executor=MagicMock(),
     )
 
 

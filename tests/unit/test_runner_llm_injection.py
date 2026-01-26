@@ -19,7 +19,7 @@ from coreason_maco.events.protocol import ExecutionContext, GraphEvent
 
 
 @pytest.fixture  # type: ignore
-def mock_context() -> ExecutionContext:
+def mock_agent_executor() -> Any:
     agent_executor = MagicMock()
 
     async def mock_invoke(prompt: str, config: Any) -> Any:
@@ -28,18 +28,21 @@ def mock_context() -> ExecutionContext:
         return response
 
     agent_executor.invoke = AsyncMock(side_effect=mock_invoke)
+    return agent_executor
 
+
+@pytest.fixture  # type: ignore
+def mock_context() -> ExecutionContext:
     return ExecutionContext(
         user_id="test_user",
         trace_id="test_trace",
         secrets_map={},
         tool_registry=MagicMock(),
-        agent_executor=agent_executor,
     )
 
 
 @pytest.mark.asyncio  # type: ignore
-async def test_llm_node_and_variable_injection(mock_context: ExecutionContext) -> None:
+async def test_llm_node_and_variable_injection(mock_context: ExecutionContext, mock_agent_executor: Any) -> None:
     """
     Test LLM node execution and {{ variable }} injection.
     A (LLM) -> B (LLM, uses output of A).
@@ -55,7 +58,7 @@ async def test_llm_node_and_variable_injection(mock_context: ExecutionContext) -
 
     graph.add_edge("A", "B")
 
-    runner = WorkflowRunner()
+    runner = WorkflowRunner(agent_executor=mock_agent_executor)
     events: List[GraphEvent] = []
 
     async for event in runner.run_workflow(graph, mock_context):
@@ -73,14 +76,14 @@ async def test_llm_node_and_variable_injection(mock_context: ExecutionContext) -
 
 
 @pytest.mark.asyncio  # type: ignore
-async def test_llm_node_fallback_args(mock_context: ExecutionContext) -> None:
+async def test_llm_node_fallback_args(mock_context: ExecutionContext, mock_agent_executor: Any) -> None:
     """
     Test LLM node using args/prompt fallback.
     """
     graph = nx.DiGraph()
     graph.add_node("A", type="LLM", config={"args": {"prompt": "Fallback"}, "model": "test-model"})
 
-    runner = WorkflowRunner()
+    runner = WorkflowRunner(agent_executor=mock_agent_executor)
     events: List[GraphEvent] = []
 
     async for event in runner.run_workflow(graph, mock_context):
@@ -123,7 +126,7 @@ async def test_injection_exact_match(mock_context: ExecutionContext) -> None:
 
 
 @pytest.mark.asyncio  # type: ignore
-async def test_llm_node_missing_prompt_logic(mock_context: ExecutionContext) -> None:
+async def test_llm_node_missing_prompt_logic(mock_context: ExecutionContext, mock_agent_executor: Any) -> None:
     """
     Test LLM node hitting the logic where neither 'prompt' nor 'args' is in config.
     It should fallback to default prompt "Analyze this." or handle it gracefully.
@@ -136,7 +139,7 @@ async def test_llm_node_missing_prompt_logic(mock_context: ExecutionContext) -> 
         config={"model": "test-model"},  # Missing prompt and args
     )
 
-    runner = WorkflowRunner()
+    runner = WorkflowRunner(agent_executor=mock_agent_executor)
     events: List[GraphEvent] = []
 
     async for event in runner.run_workflow(graph, mock_context):
@@ -145,3 +148,21 @@ async def test_llm_node_missing_prompt_logic(mock_context: ExecutionContext) -> 
     node_a_done = next(e for e in events if e.event_type == "NODE_DONE" and e.node_id == "A")
     # Default prompt is "Analyze this."
     assert node_a_done.payload["output_summary"] == "Echo: Analyze this."
+
+
+@pytest.mark.asyncio  # type: ignore
+async def test_llm_node_missing_executor_error() -> None:
+    """Test that LLM node raises ValueError if agent_executor is missing."""
+    graph = nx.DiGraph()
+    graph.add_node("A", type="LLM", config={"prompt": "Hello"})
+
+    # WorkflowRunner without agent_executor
+    runner = WorkflowRunner()
+
+    context = ExecutionContext(user_id="u", trace_id="t", secrets_map={}, tool_registry={})
+
+    with pytest.raises(ExceptionGroup) as excinfo:
+        async for _ in runner.run_workflow(graph, context):
+            pass
+
+    assert any("AgentExecutor is required" in str(e) for e in excinfo.value.exceptions)
