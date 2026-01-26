@@ -172,3 +172,29 @@ class DefaultNodeHandler:
         await asyncio.sleep(0.01)
         # Return mock_output from node attributes
         return node_attributes.get("mock_output", None)
+
+
+class HumanNodeHandler:
+    async def execute(
+        self,
+        node_id: str,
+        run_id: str,
+        config: Dict[str, Any],
+        context: ExecutionContext,
+        queue: asyncio.Queue[GraphEvent | None],
+        node_attributes: Dict[str, Any],
+    ) -> Any:
+        feedback_manager = getattr(context, "feedback_manager", None)
+
+        if not feedback_manager:
+            raise ValueError("FeedbackManager not available in ExecutionContext")
+
+        if node_id not in feedback_manager:
+            loop = asyncio.get_running_loop()
+            feedback_manager.create(node_id, loop)
+
+        future = feedback_manager[node_id]
+
+        # Wait for external input
+        result = await future
+        return result
