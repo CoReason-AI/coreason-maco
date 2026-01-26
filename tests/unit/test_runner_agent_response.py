@@ -14,7 +14,7 @@ class MockAgentResponse:
     metadata: Dict[str, Any]
 
 
-@pytest.fixture
+@pytest.fixture  # type: ignore
 def mock_context() -> ExecutionContext:
     return ExecutionContext(
         user_id="test_user",
@@ -24,7 +24,7 @@ def mock_context() -> ExecutionContext:
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio  # type: ignore
 async def test_agent_response_legacy_string_match(mock_context: ExecutionContext) -> None:
     """
     Test that the runner correctly unwraps an AgentResponse object
@@ -57,7 +57,7 @@ async def test_agent_response_legacy_string_match(mock_context: ExecutionContext
     assert "B" in executed_nodes
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio  # type: ignore
 async def test_agent_response_jinja_access(mock_context: ExecutionContext) -> None:
     """
     Test that the runner passes the FULL AgentResponse object to Jinja.
