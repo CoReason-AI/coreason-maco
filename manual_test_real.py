@@ -10,7 +10,7 @@
 
 import asyncio
 from typing import Any, AsyncGenerator, Dict
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 from coreason_maco.core.controller import WorkflowController
 from coreason_maco.core.interfaces import AgentResponse
@@ -58,7 +58,9 @@ class MockServiceRegistry:
 
     @property
     def audit_logger(self) -> Any:
-        return MagicMock()
+        mock = MagicMock()
+        mock.log_workflow_execution = AsyncMock()
+        return mock
 
 
 async def main() -> None:
