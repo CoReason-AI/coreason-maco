@@ -124,9 +124,11 @@ def test_cancel_non_existent_execution(client: TestClient) -> None:
     assert "Execution not found" in resp.json()["detail"]
 
 
-def test_resume_double_approval(client: TestClient) -> None:
+@pytest.mark.asyncio  # type: ignore
+async def test_resume_double_approval(client: TestClient) -> None:
     exec_id = "test-double"
-    future: asyncio.Future[Any] = asyncio.Future()
+    loop = asyncio.get_running_loop()
+    future: asyncio.Future[Any] = loop.create_future()
     future.set_result("first")
 
     fm = FeedbackManager()
