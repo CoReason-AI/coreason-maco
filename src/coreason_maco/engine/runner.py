@@ -19,6 +19,7 @@ from coreason_maco.core.interfaces import AgentExecutor
 from coreason_maco.engine.handlers import (
     CouncilNodeHandler,
     DefaultNodeHandler,
+    HumanNodeHandler,
     LLMNodeHandler,
     NodeHandler,
     ToolNodeHandler,
@@ -50,6 +51,7 @@ class WorkflowRunner:
             "TOOL": ToolNodeHandler(),
             "LLM": LLMNodeHandler(agent_executor),
             "COUNCIL": CouncilNodeHandler(agent_executor),
+            "HUMAN": HumanNodeHandler(),
         }
         self.default_handler = DefaultNodeHandler()
 

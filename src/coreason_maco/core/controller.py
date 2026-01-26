@@ -79,18 +79,24 @@ class WorkflowController:
         user_id = inputs.get("user_id")
         trace_id = inputs.get("trace_id")
         secrets_map = inputs.get("secrets_map", {})
+        feedback_manager = inputs.get("feedback_manager")
 
         if not user_id:
             raise ValueError("user_id is required in inputs")
         if not trace_id:
             raise ValueError("trace_id is required in inputs")
 
-        context = ExecutionContext(
-            user_id=user_id,
-            trace_id=trace_id,
-            secrets_map=secrets_map,
-            tool_registry=self.services.tool_registry,
-        )
+        # Build kwargs dynamically to support optional feedback_manager
+        ctx_kwargs = {
+            "user_id": user_id,
+            "trace_id": trace_id,
+            "secrets_map": secrets_map,
+            "tool_registry": self.services.tool_registry,
+        }
+        if feedback_manager:
+            ctx_kwargs["feedback_manager"] = feedback_manager
+
+        context = ExecutionContext(**ctx_kwargs)
 
         # 5. Run Workflow
         event_history = []
