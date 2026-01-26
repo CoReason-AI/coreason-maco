@@ -1,11 +1,13 @@
+from typing import List
+
 import networkx as nx
 import pytest
-from typing import List, Any
+from coreason_maco.engine.resolver import VariableResolver
 from coreason_maco.engine.runner import WorkflowRunner
 from coreason_maco.events.protocol import ExecutionContext, GraphEvent
-from coreason_maco.engine.resolver import VariableResolver
 
-@pytest.fixture
+
+@pytest.fixture  # type: ignore
 def mock_context() -> ExecutionContext:
     return ExecutionContext(
         user_id="test_user",
@@ -14,7 +16,8 @@ def mock_context() -> ExecutionContext:
         tool_registry={},
     )
 
-@pytest.mark.asyncio
+
+@pytest.mark.asyncio  # type: ignore
 async def test_jinja_condition_complex(mock_context: ExecutionContext) -> None:
     """
     Test branching with Jinja2 expression:
@@ -46,6 +49,7 @@ async def test_jinja_condition_complex(mock_context: ExecutionContext) -> None:
     assert "A" in executed_nodes
     assert "B" in executed_nodes
     assert "C" in skipped_nodes or "C" not in executed_nodes
+
 
 def test_evaluate_boolean_error_handling() -> None:
     """
