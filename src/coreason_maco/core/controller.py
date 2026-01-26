@@ -111,10 +111,13 @@ class WorkflowController:
         # 5. Audit Logging
         audit_logger = self.services.audit_logger
         if audit_logger:
+            # Sanitize inputs to remove internal objects (like FeedbackManager) that are not JSON serializable
+            # We also exclude 'secrets_map' to avoid logging sensitive data
+            loggable_inputs = {k: v for k, v in inputs.items() if k not in ["feedback_manager", "secrets_map"]}
             await audit_logger.log_workflow_execution(
                 trace_id=context.trace_id,
                 run_id=run_id or "unknown",
                 manifest=manifest,
-                inputs=inputs,
+                inputs=loggable_inputs,
                 events=event_history,
             )
