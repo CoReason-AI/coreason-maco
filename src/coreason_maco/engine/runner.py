@@ -9,6 +9,7 @@
 # Source Code: https://github.com/CoReason-AI/coreason_maco
 
 import asyncio
+import time
 import traceback
 import uuid
 from typing import Any, AsyncGenerator, Dict, Set
@@ -26,8 +27,17 @@ from coreason_maco.engine.handlers import (
 )
 from coreason_maco.engine.resolver import VariableResolver
 from coreason_maco.engine.topology import TopologyEngine
-from coreason_maco.events.factory import EventFactory
-from coreason_maco.events.protocol import ExecutionContext, GraphEvent
+from coreason_maco.events.protocol import (
+    EdgeTraversed,
+    ExecutionContext,
+    GraphEvent,
+    NodeCompleted,
+    NodeInit,
+    NodeRestored,
+    NodeSkipped,
+    NodeStarted,
+    WorkflowErrorPayload,
+)
 
 
 class WorkflowRunner:
@@ -97,7 +107,20 @@ class WorkflowRunner:
                 # Emit NODE_INIT for all nodes to populate the canvas
                 for node_id, data in recipe.nodes(data=True):
                     node_type = data.get("type", "DEFAULT")
-                    await event_queue.put(EventFactory.create_node_init(run_id, node_id, node_type))
+                    payload = NodeInit(
+                        node_id=node_id,
+                        type=node_type,
+                        visual_cue="IDLE",
+                    )
+                    event = GraphEvent(
+                        event_type="NODE_INIT",
+                        run_id=run_id,
+                        node_id=node_id,
+                        timestamp=time.time(),
+                        payload=payload.model_dump(),
+                        visual_metadata={"state": "IDLE", "color": "#GREY"},
+                    )
+                    await event_queue.put(event)
 
                 for layer in layers:
                     nodes_to_run = []
@@ -139,7 +162,21 @@ class WorkflowRunner:
                         node_outputs[node_id] = output
 
                         # Emit NODE_RESTORED
-                        await event_queue.put(EventFactory.create_node_restored(run_id, node_id, output))
+                        payload_restored = NodeRestored(
+                            node_id=node_id,
+                            output_summary=str(output),
+                            status="RESTORED",
+                            visual_cue="INSTANT_GREEN",
+                        )
+                        event_restored = GraphEvent(
+                            event_type="NODE_RESTORED",
+                            run_id=run_id,
+                            node_id=node_id,
+                            timestamp=time.time(),
+                            payload=payload_restored.model_dump(),
+                            visual_metadata={"state": "RESTORED", "color": "#00FF00"},
+                        )
+                        await event_queue.put(event_restored)
 
                     # Execute Running Nodes
                     if nodes_to_run:
@@ -175,7 +212,20 @@ class WorkflowRunner:
                                 activated_edges.add((node_id, succ))
 
                                 # Emit EDGE_ACTIVE
-                                await event_queue.put(EventFactory.create_edge_active(run_id, node_id, succ))
+                                payload_edge = EdgeTraversed(
+                                    source=node_id,
+                                    target=succ,
+                                    animation_speed="FAST",
+                                )
+                                event_edge = GraphEvent(
+                                    event_type="EDGE_ACTIVE",
+                                    run_id=run_id,
+                                    node_id=node_id,
+                                    timestamp=time.time(),
+                                    payload=payload_edge.model_dump(),
+                                    visual_metadata={"flow_speed": "FAST", "particle": "DOT"},
+                                )
+                                await event_queue.put(event_edge)
                             else:
                                 # Attempt to prune the branch
                                 await self._prune_branch(
@@ -258,7 +308,20 @@ class WorkflowRunner:
 
         if not is_reachable:
             skipped_nodes.add(node_id)
-            await queue.put(EventFactory.create_node_skipped(run_id, node_id))
+            payload = NodeSkipped(
+                node_id=node_id,
+                status="SKIPPED",
+                visual_cue="GREY_OUT",
+            )
+            event = GraphEvent(
+                event_type="NODE_SKIPPED",
+                run_id=run_id,
+                node_id=node_id,
+                timestamp=time.time(),
+                payload=payload.model_dump(),
+                visual_metadata={"state": "SKIPPED", "color": "#GREY"},
+            )
+            await queue.put(event)
 
             # Recursively prune successors
             successors = list(recipe.successors(node_id))
@@ -280,7 +343,21 @@ class WorkflowRunner:
         try:
             async with self.semaphore:
                 # 1. Emit NODE_START
-                await queue.put(EventFactory.create_node_start(run_id, node_id))
+                payload_start = NodeStarted(
+                    node_id=node_id,
+                    timestamp=time.time(),
+                    status="RUNNING",
+                    visual_cue="PULSE",
+                )
+                event_start = GraphEvent(
+                    event_type="NODE_START",
+                    run_id=run_id,
+                    node_id=node_id,
+                    timestamp=time.time(),
+                    payload=payload_start.model_dump(),
+                    visual_metadata={"state": "PULSING", "anim": "BREATHE"},
+                )
+                await queue.put(event_start)
 
                 node_data = recipe.nodes[node_id]
                 node_type = node_data.get("type", "DEFAULT")
@@ -304,14 +381,42 @@ class WorkflowRunner:
             node_outputs[node_id] = output
 
             # 4. Emit NODE_DONE
-            await queue.put(EventFactory.create_node_done(run_id, node_id, output))
+            payload_done = NodeCompleted(
+                node_id=node_id,
+                output_summary=str(output) if output is not None else "Completed",
+                status="SUCCESS",
+                visual_cue="GREEN_GLOW",
+            )
+            event_done = GraphEvent(
+                event_type="NODE_DONE",
+                run_id=run_id,
+                node_id=node_id,
+                timestamp=time.time(),
+                payload=payload_done.model_dump(),
+                visual_metadata={"state": "SOLID", "color": "#GREEN"},
+            )
+            await queue.put(event_done)
 
         except Exception as e:
             # Capture stack trace
             stack = traceback.format_exc()
 
             # Emit Event
-            await queue.put(EventFactory.create_error(run_id, node_id, str(e), stack, node_outputs.copy()))
+            payload_error = WorkflowErrorPayload(
+                node_id=node_id,
+                error_message=str(e),
+                stack_trace=stack,
+                input_snapshot=node_outputs.copy(),
+            )
+            event_error = GraphEvent(
+                event_type="ERROR",
+                run_id=run_id,
+                node_id=node_id,
+                timestamp=time.time(),
+                payload=payload_error.model_dump(),
+                visual_metadata={"state": "ERROR", "color": "#RED"},
+            )
+            await queue.put(event_error)
 
             # Re-raise to ensure workflow stops/bubbles up
             raise e

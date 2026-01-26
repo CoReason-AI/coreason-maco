@@ -10,11 +10,17 @@
 
 import asyncio
 import inspect
+import time
 from typing import Any, Dict, Protocol
 
 from coreason_maco.core.interfaces import AgentExecutor, ToolExecutor
-from coreason_maco.events.factory import EventFactory
-from coreason_maco.events.protocol import ExecutionContext, GraphEvent
+from coreason_maco.events.protocol import (
+    ArtifactGenerated,
+    CouncilVotePayload,
+    ExecutionContext,
+    GraphEvent,
+    NodeStream,
+)
 from coreason_maco.strategies.council import CouncilConfig, CouncilStrategy
 
 
@@ -80,7 +86,20 @@ class ToolNodeHandler:
                 url = result["url"]
 
             if artifact_type and url:
-                await queue.put(EventFactory.create_artifact_generated(run_id, node_id, artifact_type, url))
+                payload = ArtifactGenerated(
+                    node_id=node_id,
+                    artifact_type=artifact_type,
+                    url=url,
+                )
+                event = GraphEvent(
+                    event_type="ARTIFACT_GENERATED",
+                    run_id=run_id,
+                    node_id=node_id,
+                    timestamp=time.time(),
+                    payload=payload.model_dump(),
+                    visual_metadata={"state": "ARTIFACT_GENERATED", "icon": "FILE"},
+                )
+                await queue.put(event)
 
             return result
         return None
@@ -117,7 +136,20 @@ class LLMNodeHandler:
                     full_content = ""
                     async for chunk in stream_gen:
                         full_content += chunk
-                        await queue.put(EventFactory.create_node_stream(run_id, node_id, chunk))
+                        payload = NodeStream(
+                            node_id=node_id,
+                            chunk=chunk,
+                            visual_cue="TEXT_BUBBLE",
+                        )
+                        event = GraphEvent(
+                            event_type="NODE_STREAM",
+                            run_id=run_id,
+                            node_id=node_id,
+                            timestamp=time.time(),
+                            payload=payload.model_dump(),
+                            visual_metadata={"overlay": "TEXT_BUBBLE"},
+                        )
+                        await queue.put(event)
                     return full_content
         except (TypeError, AttributeError, NotImplementedError):
             # Fallback to invoke if stream is not implemented or not iterable (e.g. Mock)
@@ -152,7 +184,19 @@ class CouncilNodeHandler:
 
         result = await strategy.execute(prompt, council_config)
 
-        await queue.put(EventFactory.create_council_vote(run_id, node_id, result.individual_votes))
+        payload = CouncilVotePayload(
+            node_id=node_id,
+            votes=result.individual_votes,
+        )
+        event = GraphEvent(
+            event_type="COUNCIL_VOTE",
+            run_id=run_id,
+            node_id=node_id,
+            timestamp=time.time(),
+            payload=payload.model_dump(),
+            visual_metadata={"widget": "VOTING_BOOTH"},
+        )
+        await queue.put(event)
 
         return result.consensus
 

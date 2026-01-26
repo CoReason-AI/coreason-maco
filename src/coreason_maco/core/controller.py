@@ -102,18 +102,23 @@ class WorkflowController:
         event_history = []
         run_id = None
 
-        async for event in runner.run_workflow(graph, context, initial_inputs=inputs):
-            if run_id is None:
-                run_id = event.run_id
-            event_history.append(event.model_dump())
-            yield event
-
-        # 5. Audit Logging
-        if self.services.audit_logger:
-            await self.services.audit_logger.log_workflow_execution(
-                trace_id=context.trace_id,
-                run_id=run_id or "unknown",
-                manifest=manifest,
-                inputs=inputs,
-                events=event_history,
-            )
+        try:
+            async for event in runner.run_workflow(graph, context, initial_inputs=inputs):
+                if run_id is None:
+                    run_id = event.run_id
+                event_history.append(event.model_dump())
+                yield event
+        finally:
+            # 5. Audit Logging
+            audit_logger = self.services.audit_logger
+            if audit_logger:
+                # Sanitize inputs to remove internal objects (like FeedbackManager) that are not JSON serializable
+                # We also exclude 'secrets_map' to avoid logging sensitive data
+                loggable_inputs = {k: v for k, v in inputs.items() if k not in ["feedback_manager", "secrets_map"]}
+                await audit_logger.log_workflow_execution(
+                    trace_id=context.trace_id,
+                    run_id=run_id or "unknown",
+                    manifest=manifest,
+                    inputs=loggable_inputs,
+                    events=event_history,
+                )

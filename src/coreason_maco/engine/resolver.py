@@ -8,61 +8,98 @@
 #
 # Source Code: https://github.com/CoReason-AI/coreason_maco
 
-import re
 from typing import Any, Dict
+
+from jinja2 import Environment, TemplateSyntaxError, Undefined
+
+
+class PreserveUndefined(Undefined):  # type: ignore
+    """
+    Custom Undefined class that preserves the original variable name in the output.
+    Example: {{ missing }} -> {{ missing }}
+    """
+
+    def __str__(self) -> str:
+        # If accessing an attribute of an undefined variable, we reconstruct the path
+        if self._undefined_name is None:
+            return ""
+        return f"{{{{ {self._undefined_name} }}}}"
+
+    def __getattr__(self, name: str) -> Any:
+        # Support chained access on undefined variables: {{ A.missing.child }}
+        if self._undefined_name:
+            new_name = f"{self._undefined_name}.{name}"
+            return PreserveUndefined(name=new_name)
+        return PreserveUndefined(name=name)
+
+    def __getitem__(self, name: Any) -> Any:
+        # Support dict access on undefined: {{ A['missing'] }}
+        if self._undefined_name:
+            new_name = f"{self._undefined_name}.{name}"
+            return PreserveUndefined(name=new_name)
+        return PreserveUndefined(name=str(name))
 
 
 class VariableResolver:
     """
-    Handles resolution of variables {{ node_id }} in configuration dictionaries.
+    Handles resolution of variables {{ node_id }} in configuration dictionaries using Jinja2.
     """
+
+    def __init__(self) -> None:
+        self.env = Environment(undefined=PreserveUndefined)
 
     def resolve(self, config: Dict[str, Any], node_outputs: Dict[str, Any]) -> Dict[str, Any]:
         """
         Recursively replaces {{ node_id }} with actual output values.
         """
-        resolved = config.copy()
-        return self._replace_value(resolved, node_outputs)  # type: ignore
+        return self._replace_value(config, node_outputs)  # type: ignore
 
-    def _replace_value(self, val: Any, node_outputs: Dict[str, Any]) -> Any:
+    def _replace_value(self, val: Any, context: Dict[str, Any]) -> Any:
         if isinstance(val, str):
-            # Regex to find {{ some_node_id }}
-            # Allows alphanumeric, underscores, hyphens, and dots
-            matches = re.findall(r"\{\{\s*([\w\-_\.]+)\s*\}\}", val)
-            for node_ref in matches:
-                parts = node_ref.split(".")
-                root_node = parts[0]
+            if "{{" in val and "}}" in val:
+                try:
+                    # Preservation Logic for Exact Matches:
+                    # If the user asks for exactly "{{ node_id }}", we want to return the raw object (dict/list/etc)
+                    # instead of the stringified version Jinja produces.
+                    cleaned = val.strip()
+                    if cleaned.startswith("{{") and cleaned.endswith("}}"):
+                        inner = cleaned[2:-2].strip()
 
-                if root_node in node_outputs:
-                    current_val = node_outputs[root_node]
-                    resolution_failed = False
+                        # Direct key access
+                        if inner in context:
+                            return context[inner]
 
-                    for part in parts[1:]:
-                        if isinstance(current_val, dict):
-                            if part in current_val:
-                                current_val = current_val[part]
-                            else:
-                                resolution_failed = True
-                                break
-                        else:
-                            # Try getattr for objects
-                            if hasattr(current_val, part):
-                                current_val = getattr(current_val, part)
-                            else:
-                                resolution_failed = True
-                                break
+                        # Dotted access support for object preservation
+                        if "." in inner:
+                            parts = inner.split(".")
+                            current = context
+                            found = True
+                            for i, part in enumerate(parts):
+                                if i == 0 and part in context:
+                                    current = context[part]
+                                    continue
 
-                    if resolution_failed:
-                        continue
+                                if isinstance(current, dict) and part in current:
+                                    current = current[part]
+                                elif hasattr(current, part):
+                                    current = getattr(current, part)
+                                else:
+                                    found = False
+                                    break
 
-                    # If the string is EXACTLY the template, replace with the raw object (e.g. dict/int)
-                    if val.strip() == f"{{{{ {node_ref} }}}}":
-                        return current_val
-                    # Otherwise replace string content
-                    val = val.replace(f"{{{{ {node_ref} }}}}", str(current_val))
+                            if found:
+                                return current
+
+                    # Standard Jinja Render
+                    template = self.env.from_string(val)
+                    rendered = template.render(**context)
+
+                    return rendered
+                except (TemplateSyntaxError, Exception):
+                    return val
             return val
         elif isinstance(val, dict):
-            return {k: self._replace_value(v, node_outputs) for k, v in val.items()}
+            return {k: self._replace_value(v, context) for k, v in val.items()}
         elif isinstance(val, list):
-            return [self._replace_value(v, node_outputs) for v in val]
+            return [self._replace_value(v, context) for v in val]
         return val
