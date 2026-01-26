@@ -27,23 +27,20 @@ class WorkflowController:
         self,
         services: ServiceRegistry,
         topology: TopologyEngine | None = None,
-        runner: WorkflowRunner | None = None,
+        runner_cls: type[WorkflowRunner] | None = None,
         max_parallel_agents: int = 10,
     ) -> None:
         """
         Args:
             services: The service registry containing dependencies.
             topology: Optional TopologyEngine instance (for testing).
-            runner: Optional WorkflowRunner instance (for testing).
+            runner_cls: Optional WorkflowRunner class (for testing).
             max_parallel_agents: Maximum number of concurrent agents.
         """
         self.services = services
         self.topology = topology or TopologyEngine()
-        self.runner = runner or WorkflowRunner(
-            topology=self.topology,
-            max_parallel_agents=max_parallel_agents,
-            agent_executor=services.agent_executor,
-        )
+        self.runner_cls = runner_cls or WorkflowRunner
+        self.max_parallel_agents = max_parallel_agents
 
     async def execute_recipe(
         self, manifest: Dict[str, Any], inputs: Dict[str, Any]
@@ -64,7 +61,15 @@ class WorkflowController:
         # 2. Build DAG
         graph = self.topology.build_graph(recipe_manifest)
 
-        # 3. Build Context
+        # 3. Instantiate WorkflowRunner
+        # Strict Compliance: Runner must be instantiated here to ensure fresh state/config if needed
+        runner = self.runner_cls(
+            topology=self.topology,
+            max_parallel_agents=self.max_parallel_agents,
+            agent_executor=self.services.agent_executor,
+        )
+
+        # 4. Build Context
         # Ensure inputs contain required fields for context or extract from services/inputs
         # For now, we assume inputs provides what ExecutionContext needs EXCEPT what services provide
 
@@ -87,11 +92,11 @@ class WorkflowController:
             tool_registry=self.services.tool_registry,
         )
 
-        # 4. Run Workflow
+        # 5. Run Workflow
         event_history = []
         run_id = None
 
-        async for event in self.runner.run_workflow(graph, context, initial_inputs=inputs):
+        async for event in runner.run_workflow(graph, context, initial_inputs=inputs):
             if run_id is None:
                 run_id = event.run_id
             event_history.append(event.model_dump())
