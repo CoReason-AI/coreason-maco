@@ -8,10 +8,11 @@
 #
 # Source Code: https://github.com/CoReason-AI/coreason_maco
 
-"""
-Utils module.
-"""
+import pytest
 
-from .context import request_id_var
+pytest_plugins = ("pytest_asyncio",)
 
-__all__ = ["request_id_var"]
+
+@pytest.fixture  # type: ignore[misc]
+def anyio_backend() -> str:
+    return "asyncio"
