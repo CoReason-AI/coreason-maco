@@ -79,6 +79,13 @@ class ExecutionContext(BaseModel):
     """The Context Injection Object.
 
     Prevents MACO from needing direct access to Auth or DB drivers.
+
+    Attributes:
+        user_id: The ID of the user initiating the workflow.
+        trace_id: The unique trace ID for the execution.
+        secrets_map: Decrypted secrets passed from Vault.
+        tool_registry: Interface for the tool registry (coreason-mcp).
+        feedback_manager: Manager for human-in-the-loop feedback.
     """
 
     model_config = ConfigDict(extra="forbid", arbitrary_types_allowed=True)
@@ -91,7 +98,18 @@ class ExecutionContext(BaseModel):
 
 
 class GraphEvent(BaseModel):
-    """The atomic unit of communication between the Engine (MACO) and the UI (Flutter)."""
+    """The atomic unit of communication between the Engine (MACO) and the UI (Flutter).
+
+    Attributes:
+        event_type: The type of the event.
+        run_id: The unique ID of the workflow run.
+        trace_id: The trace ID (defaults to "unknown").
+        node_id: The ID of the node associated with the event.
+        timestamp: The timestamp of the event.
+        sequence_id: Optional sequence ID.
+        payload: The event payload containing logic output.
+        visual_metadata: Metadata for UI visualization.
+    """
 
     model_config = ConfigDict(extra="forbid")
 
