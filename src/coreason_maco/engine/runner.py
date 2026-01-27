@@ -41,9 +41,7 @@ from coreason_maco.events.protocol import (
 
 
 class WorkflowRunner:
-    """
-    The main execution engine that iterates through the DAG.
-    """
+    """The main execution engine that iterates through the DAG."""
 
     def __init__(
         self,
@@ -51,6 +49,16 @@ class WorkflowRunner:
         max_parallel_agents: int = 10,
         agent_executor: AgentExecutor | None = None,
     ) -> None:
+        """Initializes the WorkflowRunner.
+
+        Args:
+            topology: Optional TopologyEngine instance.
+            max_parallel_agents: Maximum number of concurrent agents.
+            agent_executor: Executor for agents (LLMs).
+
+        Raises:
+            ValueError: If max_parallel_agents is less than 1.
+        """
         if max_parallel_agents < 1:
             raise ValueError("max_parallel_agents must be >= 1")
         self.topology = topology or TopologyEngine()
@@ -71,8 +79,15 @@ class WorkflowRunner:
         output: Any,
         node_outputs: Dict[str, Any],
     ) -> bool:
-        """
-        Evaluates a single edge condition.
+        """Evaluates a single edge condition.
+
+        Args:
+            condition: The condition string (possibly Jinja2).
+            output: The output of the source node.
+            node_outputs: The map of all node outputs.
+
+        Returns:
+            bool: True if the condition is met, False otherwise.
         """
         if condition is None:
             # Default edge always active
@@ -95,8 +110,7 @@ class WorkflowRunner:
         resume_snapshot: Dict[str, Any] | None = None,
         initial_inputs: Dict[str, Any] | None = None,
     ) -> AsyncGenerator[GraphEvent, None]:
-        """
-        Executes the workflow defined by the recipe.
+        """Executes the workflow defined by the recipe.
 
         Args:
             recipe: The NetworkX DiGraph representing the workflow.
@@ -107,6 +121,9 @@ class WorkflowRunner:
 
         Yields:
             GraphEvent: Real-time telemetry events.
+
+        Raises:
+            Exception: Propagates any exception that occurs during execution.
         """
         # Validate graph first
         self.topology.validate_graph(recipe)
@@ -294,8 +311,16 @@ class WorkflowRunner:
         activated_edges: Set[tuple[str, str]],
         skipped_nodes: Set[str],
     ) -> None:
-        """
-        Recursively marks a branch as skipped if it is unreachable.
+        """Recursively marks a branch as skipped if it is unreachable.
+
+        Args:
+            node_id: The ID of the node to check for pruning.
+            run_id: The ID of the current run.
+            queue: The event queue.
+            recipe: The workflow graph.
+            node_outputs: The current node outputs.
+            activated_edges: The set of activated edges.
+            skipped_nodes: The set of already skipped nodes.
         """
         if node_id in skipped_nodes or node_id in node_outputs:
             return
@@ -352,8 +377,18 @@ class WorkflowRunner:
         recipe: nx.DiGraph,
         node_outputs: Dict[str, Any],
     ) -> None:
-        """
-        Executes a single node.
+        """Executes a single node.
+
+        Args:
+            node_id: The ID of the node to execute.
+            run_id: The ID of the current run.
+            queue: The event queue.
+            context: The execution context.
+            recipe: The workflow graph.
+            node_outputs: The dictionary to store node output.
+
+        Raises:
+            Exception: Re-raises any exception during execution after logging.
         """
         try:
             async with self.semaphore:

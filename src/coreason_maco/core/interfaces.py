@@ -12,42 +12,58 @@ from typing import Any, AsyncGenerator, Dict, List, Protocol
 
 
 class AgentResponse(Protocol):
-    """
-    Response from an agent execution.
-    """
+    """Response from an agent execution."""
 
     content: str
     metadata: dict[str, Any]
 
 
 class AgentExecutor(Protocol):
-    """
-    Interface for the agent executor (coreason-cortex).
-    """
+    """Interface for the agent executor (coreason-cortex)."""
 
     async def invoke(self, prompt: str, model_config: dict[str, Any]) -> AgentResponse:
-        """Invokes an agent."""
+        """Invokes an agent.
+
+        Args:
+            prompt: The input prompt for the agent.
+            model_config: Configuration for the model execution.
+
+        Returns:
+            AgentResponse: The response from the agent.
+        """
         ...
 
     def stream(self, prompt: str, model_config: dict[str, Any]) -> AsyncGenerator[str, None]:
-        """Streams the agent response."""
+        """Streams the agent response.
+
+        Args:
+            prompt: The input prompt for the agent.
+            model_config: Configuration for the model execution.
+
+        Yields:
+            str: Chunks of the response.
+        """
         ...
 
 
 class ToolExecutor(Protocol):
-    """
-    Interface for the tool executor (coreason-mcp).
-    """
+    """Interface for the tool executor (coreason-mcp)."""
 
     async def execute(self, tool_name: str, args: dict[str, Any]) -> Any:
-        """Executes a tool."""
+        """Executes a tool.
+
+        Args:
+            tool_name: The name of the tool to execute.
+            args: Arguments for the tool.
+
+        Returns:
+            Any: The result of the tool execution.
+        """
         ...
 
 
 class AuditLogger(Protocol):
-    """
-    Interface for the audit logger (coreason-veritas).
-    """
+    """Interface for the audit logger (coreason-veritas)."""
 
     async def log_workflow_execution(
         self,
@@ -57,14 +73,23 @@ class AuditLogger(Protocol):
         inputs: Dict[str, Any],
         events: List[Dict[str, Any]],
     ) -> Any:
-        """Logs the complete workflow execution."""
+        """Logs the complete workflow execution.
+
+        Args:
+            trace_id: The trace ID associated with the execution.
+            run_id: The run ID of the execution.
+            manifest: The recipe manifest used.
+            inputs: The inputs provided for the execution.
+            events: The list of events generated during execution.
+
+        Returns:
+            Any: The result of the logging operation.
+        """
         ...
 
 
 class ServiceRegistry(Protocol):
-    """
-    Dependency Injection container.
-    """
+    """Dependency Injection container."""
 
     @property
     def tool_registry(self) -> ToolExecutor:

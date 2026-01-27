@@ -16,8 +16,8 @@ from coreason_maco.utils.logger import logger
 
 
 class PreserveUndefined(Undefined):  # type: ignore
-    """
-    Custom Undefined class that preserves the original variable name in the output.
+    """Custom Undefined class that preserves the original variable name in the output.
+
     Example: {{ missing }} -> {{ missing }}
     """
 
@@ -43,23 +43,35 @@ class PreserveUndefined(Undefined):  # type: ignore
 
 
 class VariableResolver:
-    """
-    Handles resolution of variables {{ node_id }} in configuration dictionaries using Jinja2.
-    """
+    """Handles resolution of variables {{ node_id }} in configuration dictionaries using Jinja2."""
 
     def __init__(self) -> None:
+        """Initializes the VariableResolver with a custom Jinja2 environment."""
         self.env = Environment(undefined=PreserveUndefined)
 
     def resolve(self, config: Dict[str, Any], node_outputs: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Recursively replaces {{ node_id }} with actual output values.
+        """Recursively replaces {{ node_id }} with actual output values.
+
+        Args:
+            config: The configuration dictionary containing variables.
+            node_outputs: Dictionary mapping node IDs to their outputs.
+
+        Returns:
+            Dict[str, Any]: The resolved configuration dictionary.
         """
         return self._replace_value(config, node_outputs)  # type: ignore
 
     def evaluate_boolean(self, expression: str, context: Dict[str, Any]) -> bool:
-        """
-        Evaluates a Jinja2 expression returning a boolean.
+        """Evaluates a Jinja2 expression returning a boolean.
+
         Expects the rendered string to be "True", "False", "1", "0", etc.
+
+        Args:
+            expression: The boolean expression to evaluate.
+            context: The context dictionary for variable substitution.
+
+        Returns:
+            bool: The result of the boolean evaluation.
         """
         try:
             # Check if expression is wrapped in brackets, if not, maybe it's just a value

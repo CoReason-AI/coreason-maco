@@ -14,9 +14,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class NodeModel(BaseModel):
-    """
-    Represents a single node in the workflow graph.
-    """
+    """Represents a single node in the workflow graph."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -26,9 +24,7 @@ class NodeModel(BaseModel):
 
 
 class EdgeModel(BaseModel):
-    """
-    Represents a directed edge between two nodes.
-    """
+    """Represents a directed edge between two nodes."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -38,9 +34,7 @@ class EdgeModel(BaseModel):
 
 
 class RecipeManifest(BaseModel):
-    """
-    The Strategic Recipe definition.
-    """
+    """The Strategic Recipe definition."""
 
     model_config = ConfigDict(extra="forbid")
 
