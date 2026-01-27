@@ -10,11 +10,14 @@
 
 from typing import Any, AsyncGenerator, Dict
 
+import anyio
+
 from coreason_maco.core.interfaces import ServiceRegistry
 from coreason_maco.core.manifest import RecipeManifest
 from coreason_maco.engine.runner import WorkflowRunner
 from coreason_maco.engine.topology import TopologyEngine
 from coreason_maco.events.protocol import ExecutionContext, GraphEvent
+from coreason_maco.utils.context import request_id_var
 
 
 class WorkflowController:
@@ -67,10 +70,12 @@ class WorkflowController:
             ValueError: If required inputs are missing.
         """
         # 1. Validate Manifest
-        recipe_manifest = RecipeManifest(**manifest)
+        # Wrap CPU-heavy validation
+        recipe_manifest = await anyio.to_thread.run_sync(lambda: RecipeManifest(**manifest))
 
         # 2. Build DAG
-        graph = self.topology.build_graph(recipe_manifest)
+        # Wrap CPU-heavy graph building
+        graph = await anyio.to_thread.run_sync(self.topology.build_graph, recipe_manifest)
 
         # 3. Instantiate WorkflowRunner
         # Strict Compliance: Runner must be instantiated here to ensure fresh state/config if needed
@@ -109,6 +114,9 @@ class WorkflowController:
 
         context = ExecutionContext(**ctx_kwargs)
 
+        # Set ContextVar for tracing
+        token = request_id_var.set(context.trace_id)
+
         # 5. Run Workflow
         event_history = []
         run_id = None
@@ -125,6 +133,9 @@ class WorkflowController:
                 event_history.append(event.model_dump())
                 yield event
         finally:
+            # Reset ContextVar
+            request_id_var.reset(token)
+
             # 5. Audit Logging
             audit_logger = self.services.audit_logger
             if audit_logger:

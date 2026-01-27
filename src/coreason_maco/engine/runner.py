@@ -14,6 +14,7 @@ import traceback
 import uuid
 from typing import Any, AsyncGenerator, Dict, Set
 
+import anyio
 import networkx as nx
 
 from coreason_maco.core.interfaces import AgentExecutor
@@ -126,10 +127,10 @@ class WorkflowRunner:
             Exception: Propagates any exception that occurs during execution.
         """
         # Validate graph first
-        self.topology.validate_graph(recipe)
+        await anyio.to_thread.run_sync(self.topology.validate_graph, recipe)
 
         run_id = str(uuid.uuid4())
-        layers = self.topology.get_execution_layers(recipe)
+        layers = await anyio.to_thread.run_sync(self.topology.get_execution_layers, recipe)
 
         # Queue to bridge execution tasks and the generator
         event_queue: asyncio.Queue[GraphEvent | None] = asyncio.Queue()
