@@ -9,10 +9,9 @@
 # Source Code: https://github.com/CoReason-AI/coreason_maco
 
 import importlib
-import sys
 import shutil
+import sys
 from pathlib import Path
-from unittest.mock import patch
 
 from coreason_maco.utils.logger import logger
 
