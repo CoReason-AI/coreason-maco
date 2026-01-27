@@ -8,16 +8,21 @@
 #
 # Source Code: https://github.com/CoReason-AI/coreason_maco
 
-from typing import Any, AsyncGenerator, Dict
+from typing import Any, AsyncGenerator, Dict, Optional
 
 import anyio
+
+try:
+    from coreason_identity.models import UserContext
+except ImportError:  # pragma: no cover
+    UserContext = Any
 
 from coreason_maco.core.interfaces import ServiceRegistry
 from coreason_maco.core.manifest import RecipeManifest
 from coreason_maco.engine.runner import WorkflowRunner
 from coreason_maco.engine.topology import TopologyEngine
-from coreason_maco.events.protocol import ExecutionContext, GraphEvent
-from coreason_maco.utils.context import request_id_var
+from coreason_maco.events.protocol import GraphEvent
+from coreason_maco.utils.context import ExecutionContext, request_id_var
 
 
 class WorkflowController:
@@ -52,6 +57,7 @@ class WorkflowController:
         manifest: Dict[str, Any],
         inputs: Dict[str, Any],
         resume_snapshot: Dict[str, Any] | None = None,
+        user_context: Optional[UserContext] = None,
     ) -> AsyncGenerator[GraphEvent, None]:
         """Executes a recipe based on the provided manifest and inputs.
 
@@ -62,6 +68,7 @@ class WorkflowController:
             inputs: Input parameters for the execution.
             resume_snapshot: Optional snapshot of a previous execution to resume from.
                              Maps node_id -> output.
+            user_context: The user context (identity passport).
 
         Yields:
             GraphEvent: Real-time telemetry events.
@@ -108,6 +115,7 @@ class WorkflowController:
             "trace_id": trace_id,
             "secrets_map": secrets_map,
             "tool_registry": self.services.tool_registry,
+            "user_context": user_context,
         }
         if feedback_manager:
             ctx_kwargs["feedback_manager"] = feedback_manager
