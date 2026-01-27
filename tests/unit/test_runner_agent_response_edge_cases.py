@@ -60,10 +60,7 @@ async def test_jinja_deep_metadata_access(mock_context: ExecutionContext) -> Non
     Test 2: Deeply nested metadata access in Jinja.
     """
     G = nx.DiGraph()
-    response = MockAgentResponse(
-        content="ok",
-        metadata={"usage": {"total_tokens": 150, "cost": 0.02}}
-    )
+    response = MockAgentResponse(content="ok", metadata={"usage": {"total_tokens": 150, "cost": 0.02}})
     G.add_node("A", mock_output=response)
     G.add_node("B")
 
