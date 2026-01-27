@@ -34,7 +34,7 @@ class MockAgentExecutor:
 
 
 class MockToolExecutor:
-    async def execute(self, tool_name: str, args: Dict[str, Any]) -> Any:
+    async def execute(self, tool_name: str, args: Dict[str, Any], user_context: Any = None) -> Any:
         print(f"\n[MockTool] Executing '{tool_name}' with args: {args}")
         if tool_name == "write_file":
             return f"Written to {args.get('path')}: {args.get('content')}"

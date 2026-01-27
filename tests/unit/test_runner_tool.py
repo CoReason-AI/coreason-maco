@@ -23,8 +23,8 @@ class MockToolExecutor:
     def __init__(self) -> None:
         self.calls: List[Dict[str, Any]] = []
 
-    async def execute(self, tool_name: str, args: Dict[str, Any]) -> Any:
-        self.calls.append({"tool_name": tool_name, "args": args})
+    async def execute(self, tool_name: str, args: Dict[str, Any], user_context: Any = None) -> Any:
+        self.calls.append({"tool_name": tool_name, "args": args, "user_context": user_context})
         if tool_name == "calculator":
             op = args.get("op")
             a = args.get("a")

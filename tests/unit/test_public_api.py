@@ -23,3 +23,7 @@ def test_public_api_imports() -> None:
     assert WorkflowRunner is not None
     assert WorkflowController is not None
     assert GraphEvent is not None
+
+def test_hello_world() -> None:
+    from coreason_maco import hello_world
+    assert hello_world() == "Hello World!"

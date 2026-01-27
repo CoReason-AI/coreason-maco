@@ -107,7 +107,7 @@ async def test_injection_exact_match(mock_context: ExecutionContext) -> None:
     graph.add_edge("A", "B")
 
     # Mock tool execution
-    async def mock_execute(name: str, args: Dict[str, Any]) -> Any:
+    async def mock_execute(name: str, args: Dict[str, Any], user_context: Any = None) -> Any:
         return args["input"]  # Should be the dict
 
     mock_context.tool_registry.execute = AsyncMock(side_effect=mock_execute)

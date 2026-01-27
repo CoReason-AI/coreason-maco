@@ -10,6 +10,7 @@
 
 import importlib
 import sys
+import shutil
 from pathlib import Path
 from unittest.mock import patch
 
@@ -20,10 +21,7 @@ def test_logger_initialization() -> None:
     """Test that the logger is initialized correctly and creates the log directory."""
     # Since the logger is initialized on import, we check side effects
 
-    # Check if logs directory creation is handled
-    # Note: running this test might actually create the directory in the test environment
-    # if it doesn't exist.
-
+    # Ensure logs directory is created if it was deleted
     log_path = Path("logs")
     if not log_path.exists():
         log_path.mkdir(parents=True, exist_ok=True)
@@ -43,22 +41,16 @@ def test_logger_exports() -> None:
 
 def test_logger_creates_directory() -> None:
     """Test that the logger creates the logs directory if it doesn't exist."""
+    # Ensure logs directory does NOT exist physically to test real creation
+    log_path = Path("logs")
+    if log_path.exists():
+        shutil.rmtree(log_path)
+
     # Remove module if present to force re-execution of top-level code
     if "coreason_maco.utils.logger" in sys.modules:
         del sys.modules["coreason_maco.utils.logger"]
 
-    # We need to patch Path.exists to return False for "logs"
-    # and Path.mkdir to verify it's called.
-    # Since Path is instantiated as Path("logs"), we need to catch that specific instance.
-
-    with patch("pathlib.Path.exists", return_value=False) as mock_exists, patch("pathlib.Path.mkdir") as mock_mkdir:
-        importlib.import_module("coreason_maco.utils.logger")
-
-        # Verify mkdir was called
-        assert mock_exists.called
-        assert mock_mkdir.called
-
-    # Reload the module properly for other tests
-    if "coreason_maco.utils.logger" in sys.modules:
-        del sys.modules["coreason_maco.utils.logger"]
     importlib.import_module("coreason_maco.utils.logger")
+
+    assert log_path.exists()
+    assert log_path.is_dir()

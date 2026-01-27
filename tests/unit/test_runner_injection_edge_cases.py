@@ -31,7 +31,7 @@ def mock_context() -> ExecutionContext:
     agent_executor.invoke = AsyncMock(side_effect=mock_invoke)
 
     # Mock tool registry
-    async def mock_execute(name: str, args: Dict[str, Any]) -> Any:
+    async def mock_execute(name: str, args: Dict[str, Any], user_context: Any = None) -> Any:
         # Return the args so we can inspect what was injected
         return args
 
