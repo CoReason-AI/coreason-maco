@@ -14,7 +14,13 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class NodeModel(BaseModel):
-    """Represents a single node in the workflow graph."""
+    """Represents a single node in the workflow graph.
+
+    Attributes:
+        id: The unique identifier for the node.
+        type: The type of the node (e.g., "LLM", "TOOL", "COUNCIL").
+        config: Configuration parameters for the node.
+    """
 
     model_config = ConfigDict(extra="forbid")
 
@@ -24,7 +30,13 @@ class NodeModel(BaseModel):
 
 
 class EdgeModel(BaseModel):
-    """Represents a directed edge between two nodes."""
+    """Represents a directed edge between two nodes.
+
+    Attributes:
+        source: The ID of the source node.
+        target: The ID of the target node.
+        condition: Optional condition to activate the edge (e.g., "path_a").
+    """
 
     model_config = ConfigDict(extra="forbid")
 
@@ -34,7 +46,14 @@ class EdgeModel(BaseModel):
 
 
 class RecipeManifest(BaseModel):
-    """The Strategic Recipe definition."""
+    """The Strategic Recipe definition.
+
+    Attributes:
+        name: The name of the recipe.
+        version: The version of the recipe (default "1.0").
+        nodes: List of nodes in the workflow.
+        edges: List of edges in the workflow.
+    """
 
     model_config = ConfigDict(extra="forbid")
 
