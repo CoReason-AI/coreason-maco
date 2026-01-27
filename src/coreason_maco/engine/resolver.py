@@ -12,6 +12,8 @@ from typing import Any, Dict
 
 from jinja2 import Environment, TemplateSyntaxError, Undefined
 
+from coreason_maco.utils.logger import logger
+
 
 class PreserveUndefined(Undefined):  # type: ignore
     """
@@ -53,6 +55,24 @@ class VariableResolver:
         Recursively replaces {{ node_id }} with actual output values.
         """
         return self._replace_value(config, node_outputs)  # type: ignore
+
+    def evaluate_boolean(self, expression: str, context: Dict[str, Any]) -> bool:
+        """
+        Evaluates a Jinja2 expression returning a boolean.
+        Expects the rendered string to be "True", "False", "1", "0", etc.
+        """
+        try:
+            # Check if expression is wrapped in brackets, if not, maybe it's just a value
+            # But usually expressions for conditions should be {{ ... }}
+
+            template = self.env.from_string(expression)
+            rendered = template.render(**context)
+            cleaned = rendered.strip().lower()
+            return cleaned in ("true", "1", "yes", "on")
+        except (TemplateSyntaxError, Exception) as e:
+            # In case of syntax error or other issues, return False (fail safe)
+            logger.warning(f"Jinja2 evaluation error: {e}. Expression: {expression}")
+            return False
 
     def _replace_value(self, val: Any, context: Dict[str, Any]) -> Any:
         if isinstance(val, str):
