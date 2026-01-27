@@ -1,55 +1,75 @@
-# coreason-maco
+# CoReason Runtime Engine ("The General")
 
-**Multi-Agent Collaborative Orchestrator**
+**Multi-Agent Collaborative Orchestrator (MACO)**
 
+[![License: Prosperity 3.0](https://img.shields.io/badge/License-Prosperity%203.0-blue.svg)](https://github.com/CoReason-AI/coreason_maco/blob/main/LICENSE)
 [![CI/CD](https://github.com/CoReason-AI/coreason_maco/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/CoReason-AI/coreason_maco/actions/workflows/ci-cd.yml)
-[![PyPI](https://img.shields.io/pypi/v/coreason_maco.svg)](https://pypi.org/project/coreason_maco/)
-[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/coreason_maco.svg)](https://pypi.org/project/coreason_maco/)
-[![License](https://img.shields.io/github/license/CoReason-AI/coreason_maco)](https://github.com/CoReason-AI/coreason_maco/blob/main/LICENSE)
-[![Codecov](https://codecov.io/gh/CoReason-AI/coreason_maco/branch/main/graph/badge.svg)](https://codecov.io/gh/CoReason-AI/coreason_maco)
-[![Downloads](https://static.pepy.tech/badge/coreason_maco)](https://pepy.tech/project/coreason_maco)
-[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
-[![Pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/CoReason-AI/coreason_maco/blob/main/pyproject.toml)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/CoReason-AI/coreason_maco)
 
 ## Overview
 
-`coreason-maco` is a specialized Python library designed to **facilitate the orchestration of autonomous agents**. It provides a robust foundation for **deterministic, GxP-compliant workflows** and **real-time "Glass Box" telemetry**, enabling developers to build scalable and verifiable systems.
+**`coreason-maco`** is the runtime engine designed to transform AI from a "Chatbot" into a **"Strategic Simulator."** It executes pre-defined, deterministic workflows ("Recipes") where multiple specialized AI agents collaborate, debate, and verify each other's work.
+
+As the **Orchestrator**, it manages a team of specialized agents to break down complex problems, execute parallel research streams, debate findings using a "Council of Models", and visualize the entire thought process in real-time.
 
 ## Key Features
 
-* **Feature A:** **Deterministic Orchestration:** Executes complex recipes with predictable, verifiable outcomes.
-* **Feature B:** **Live Telemetry:** Streams granular `GraphEvent`s for real-time visualization of the reasoning process.
-* **Integration:** Seamlessly integrates with the Coreason ecosystem.
+*   **"Glass Box" Visualization:** Exposes internal state in real-time. Users can see exactly which agent is working, what data they are accessing, and where they are in the process.
+*   **Architectural Triangulation ("The Council"):** Automatically "triangulates" answers by asking distinct models (e.g., OpenAI, Anthropic, DeepSeek) and synthesizing consensus to reduce hallucination.
+*   **Counterfactual Simulation ("What-If" Analysis):** Allows users to "Fork" the reasoning process to explore different scenarios without losing original data.
+*   **GxP Compliance & Determinism:** Ensures workflows are reproducible. Running the same "Recipe" with the same inputs and "Seed" yields the exact same result.
 
-## Getting Started
+## Installation
 
-### Prerequisites
-- Python 3.12+
-- Poetry
-
-### Installation
-
-```sh
+```bash
 pip install coreason_maco
 ```
 
-1.  Clone the repository:
-    ```sh
-    git clone https://github.com/CoReason-AI/coreason_maco.git
-    cd coreason_maco
-    ```
-2.  Install dependencies:
-    ```sh
-    poetry install
-    ```
+## Usage
 
-### Usage
+Here is how to initialize and execute a workflow using `coreason-maco`:
 
--   Run the linter:
-    ```sh
-    poetry run pre-commit run --all-files
-    ```
--   Run the tests:
-    ```sh
-    poetry run pytest
-    ```
+```python
+import asyncio
+from coreason_maco.core.controller import WorkflowController
+from coreason_maco.infrastructure.server_defaults import ServerRegistry
+
+async def main():
+    # 1. Initialize Services (Dependency Injection)
+    services = ServerRegistry()
+
+    # 2. Initialize Controller
+    controller = WorkflowController(services=services)
+
+    # 3. Define a Simple Manifest (Recipe)
+    manifest = {
+        "name": "Simple Greeting",
+        "nodes": [
+            {"id": "node_1", "type": "LLM", "config": {"prompt": "Say hello!"}}
+        ],
+        "edges": []
+    }
+
+    # 4. Define Inputs
+    inputs = {
+        "user_id": "test_user",
+        "trace_id": "trace_123",
+        "secrets_map": {}
+    }
+
+    # 5. Execute Workflow
+    print("Starting Workflow...")
+    async for event in controller.execute_recipe(manifest, inputs):
+        print(f"Event: {event.event_type} | Node: {event.node_id} | Payload: {event.payload}")
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+## Requirements
+
+*   Python 3.12+
+*   `pydantic>=2.0`
+*   `networkx`
+*   `anyio`

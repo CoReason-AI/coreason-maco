@@ -17,9 +17,7 @@ from coreason_maco.core.interfaces import AgentExecutor
 
 
 class CouncilConfig(BaseModel):
-    """
-    Configuration for the Council of Models strategy.
-    """
+    """Configuration for the Council of Models strategy."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -29,9 +27,7 @@ class CouncilConfig(BaseModel):
 
 
 class CouncilResult(BaseModel):
-    """
-    The result of a council execution.
-    """
+    """The result of a council execution."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -40,16 +36,20 @@ class CouncilResult(BaseModel):
 
 
 class CouncilStrategy:
-    """
-    Orchestrates a Map-Reduce consensus process among multiple models.
-    """
+    """Orchestrates a Map-Reduce consensus process among multiple models."""
 
     def __init__(self, executor: AgentExecutor) -> None:
+        """Initializes the CouncilStrategy.
+
+        Args:
+            executor: The agent executor to use for running models.
+        """
         self.executor = executor
 
     async def execute(self, prompt: str, config: CouncilConfig) -> CouncilResult:
-        """
-        Executes the council strategy.
+        """Executes the council strategy.
+
+        Fan out to multiple agents (Map), then synthesize results (Reduce).
 
         Args:
             prompt: The input prompt/question.
@@ -57,6 +57,9 @@ class CouncilStrategy:
 
         Returns:
             CouncilResult: The synthesized consensus and individual votes.
+
+        Raises:
+            RuntimeError: If all agents fail or synthesizer fails.
         """
         # Map Phase: Fan out to all agents
         tasks = []

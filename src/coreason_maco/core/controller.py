@@ -18,9 +18,10 @@ from coreason_maco.events.protocol import ExecutionContext, GraphEvent
 
 
 class WorkflowController:
-    """
-    The main entry point for executing workflows.
+    """The main entry point for executing workflows.
+
     Orchestrates validation, graph building, and execution.
+    It acts as the public API surface for the library.
     """
 
     def __init__(
@@ -30,7 +31,8 @@ class WorkflowController:
         runner_cls: type[WorkflowRunner] | None = None,
         max_parallel_agents: int = 10,
     ) -> None:
-        """
+        """Initializes the WorkflowController.
+
         Args:
             services: The service registry containing dependencies.
             topology: Optional TopologyEngine instance (for testing).
@@ -48,8 +50,9 @@ class WorkflowController:
         inputs: Dict[str, Any],
         resume_snapshot: Dict[str, Any] | None = None,
     ) -> AsyncGenerator[GraphEvent, None]:
-        """
-        Executes a recipe based on the provided manifest and inputs.
+        """Executes a recipe based on the provided manifest and inputs.
+
+        Validates the manifest, builds the DAG, and streams execution events.
 
         Args:
             manifest: The raw recipe manifest dictionary.
@@ -59,6 +62,9 @@ class WorkflowController:
 
         Yields:
             GraphEvent: Real-time telemetry events.
+
+        Raises:
+            ValueError: If required inputs are missing.
         """
         # 1. Validate Manifest
         recipe_manifest = RecipeManifest(**manifest)
