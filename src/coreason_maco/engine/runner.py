@@ -65,6 +65,29 @@ class WorkflowRunner:
         }
         self.default_handler = DefaultNodeHandler()
 
+    def _evaluate_edge_condition(
+        self,
+        condition: str | None,
+        output: Any,
+        node_outputs: Dict[str, Any],
+    ) -> bool:
+        """
+        Evaluates a single edge condition.
+        """
+        if condition is None:
+            # Default edge always active
+            return True
+        elif "{{" in condition and "}}" in condition:
+            # Jinja2 Expression
+            return self.resolver.evaluate_boolean(condition, node_outputs)
+        elif hasattr(output, "content") and str(output.content) == condition:
+            # Automatic unwrapping for AgentResponse protocols
+            return True
+        elif str(output) == condition:
+            # Simple equality match (casted to string for safety)
+            return True
+        return False
+
     async def run_workflow(
         self,
         recipe: nx.DiGraph,
@@ -200,21 +223,7 @@ class WorkflowRunner:
                             condition = edge_data.get("condition")
 
                             # Determine if edge should be activated
-                            activate = False
-                            if condition is None:
-                                # Default edge always active
-                                activate = True
-                            elif "{{" in condition and "}}" in condition:
-                                # Jinja2 Expression
-                                activate = self.resolver.evaluate_boolean(condition, node_outputs)
-                            elif hasattr(output, "content") and str(output.content) == condition:
-                                # Automatic unwrapping for AgentResponse protocols
-                                activate = True
-                            elif str(output) == condition:
-                                # Simple equality match (casted to string for safety)
-                                activate = True
-
-                            if activate:
+                            if self._evaluate_edge_condition(condition, output, node_outputs):
                                 activated_edges.add((node_id, succ))
 
                                 # Emit EDGE_ACTIVE
