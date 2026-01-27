@@ -216,7 +216,9 @@ async def test_council_node_missing_executor() -> None:
 
         @property
         def audit_logger(self) -> Any:
-            return MagicMock()
+            from unittest.mock import AsyncMock
+
+            return AsyncMock()
 
         @property
         def agent_executor(self) -> AgentExecutor:

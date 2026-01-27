@@ -8,10 +8,7 @@
 #
 # Source Code: https://github.com/CoReason-AI/coreason_maco
 
-"""
-Utils module.
-"""
+from contextvars import ContextVar
 
-from .context import request_id_var
-
-__all__ = ["request_id_var"]
+# Context variable for tracing request IDs across async boundaries
+request_id_var: ContextVar[str] = ContextVar("request_id", default="")
