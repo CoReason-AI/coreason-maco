@@ -8,7 +8,12 @@
 #
 # Source Code: https://github.com/CoReason-AI/coreason_maco
 
-from typing import Any, AsyncGenerator, Dict, List, Protocol
+from typing import Any, AsyncGenerator, Dict, List, Optional, Protocol
+
+try:
+    from coreason_identity.models import UserContext
+except ImportError:  # pragma: no cover
+    UserContext = Any
 
 
 class AgentResponse(Protocol):
@@ -49,12 +54,18 @@ class AgentExecutor(Protocol):
 class ToolExecutor(Protocol):
     """Interface for the tool executor (coreason-mcp)."""
 
-    async def execute(self, tool_name: str, args: dict[str, Any]) -> Any:
+    async def execute(
+        self,
+        tool_name: str,
+        args: dict[str, Any],
+        user_context: Optional[UserContext] = None,
+    ) -> Any:
         """Executes a tool.
 
         Args:
             tool_name: The name of the tool to execute.
             args: Arguments for the tool.
+            user_context: The user context (identity passport).
 
         Returns:
             Any: The result of the tool execution.

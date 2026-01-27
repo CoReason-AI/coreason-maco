@@ -17,11 +17,11 @@ from coreason_maco.core.interfaces import AgentExecutor, ToolExecutor
 from coreason_maco.events.protocol import (
     ArtifactGenerated,
     CouncilVotePayload,
-    ExecutionContext,
     GraphEvent,
     NodeStream,
 )
 from coreason_maco.strategies.council import CouncilConfig, CouncilStrategy
+from coreason_maco.utils.context import ExecutionContext
 
 
 class NodeHandler(Protocol):
@@ -84,7 +84,7 @@ class ToolNodeHandler:
             # We cast to ToolExecutor protocol to satisfy type checker if possible,
             # but runtime duck typing works too.
             executor: ToolExecutor = context.tool_registry
-            result = await executor.execute(tool_name, tool_args)
+            result = await executor.execute(tool_name, tool_args, user_context=context.user_context)
 
             # Check for Artifact
             artifact_type = None

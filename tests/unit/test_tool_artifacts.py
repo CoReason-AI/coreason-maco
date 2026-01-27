@@ -27,7 +27,7 @@ class MockArtifact(BaseModel):
 class MockToolExecutorArtifact:
     """Mock implementation of ToolExecutor that returns an artifact."""
 
-    async def execute(self, tool_name: str, args: Dict[str, Any]) -> Any:
+    async def execute(self, tool_name: str, args: Dict[str, Any], user_context: Any = None) -> Any:
         if tool_name == "pdf_generator":
             return MockArtifact(artifact_type="PDF", url="https://example.com/report.pdf")
         return "regular_output"
@@ -77,7 +77,7 @@ async def test_tool_generates_artifact_event() -> None:
 class MockToolExecutorDictArtifact:
     """Mock implementation returning a dict."""
 
-    async def execute(self, tool_name: str, args: Dict[str, Any]) -> Any:
+    async def execute(self, tool_name: str, args: Dict[str, Any], user_context: Any = None) -> Any:
         return {"artifact_type": "CSV", "url": "https://example.com/data.csv", "other": "data"}
 
 

@@ -30,7 +30,6 @@ from coreason_maco.engine.resolver import VariableResolver
 from coreason_maco.engine.topology import TopologyEngine
 from coreason_maco.events.protocol import (
     EdgeTraversed,
-    ExecutionContext,
     GraphEvent,
     NodeCompleted,
     NodeInit,
@@ -39,6 +38,7 @@ from coreason_maco.events.protocol import (
     NodeStarted,
     WorkflowErrorPayload,
 )
+from coreason_maco.utils.context import ExecutionContext
 
 
 class WorkflowRunner:
@@ -452,12 +452,22 @@ class WorkflowRunner:
             # Capture stack trace
             stack = traceback.format_exc()
 
+            # Sanitize snapshot to prevent token leakage
+            def _sanitize(data: Any) -> Any:
+                if isinstance(data, dict):
+                    return {k: _sanitize(v) for k, v in data.items() if k not in {"user_context", "downstream_token"}}
+                elif isinstance(data, list):
+                    return [_sanitize(v) for v in data]
+                return data
+
+            safe_snapshot = _sanitize(node_outputs.copy())
+
             # Emit Event
             payload_error = WorkflowErrorPayload(
                 node_id=node_id,
                 error_message=str(e),
                 stack_trace=stack,
-                input_snapshot=node_outputs.copy(),
+                input_snapshot=safe_snapshot,
             )
             event_error = GraphEvent(
                 event_type="ERROR",

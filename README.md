@@ -23,6 +23,7 @@ As the **Orchestrator**, it manages a team of specialized agents to:
 *   **Architectural Triangulation ("The Council"):** Automatically "triangulates" answers by asking three distinct models (e.g., OpenAI, Anthropic, DeepSeek) and having a fourth "Judge" agent synthesize the consensus.
 *   **Counterfactual Simulation ("What-If" Analysis):** Allows users to "Fork" the reasoning process to explore different scenarios without losing original data.
 *   **GxP Compliance & Determinism:** Ensures workflows are reproducible. Running the same "Recipe" with the same inputs and "Seed" yields the exact same result.
+*   **Secure Identity Propagation:** Propagates `UserContext` (Identity Passport) securely to all workers and tools, ensuring "On-Behalf-Of" execution without leaking tokens in UI events.
 
 ## Installation
 
@@ -38,6 +39,12 @@ Here is how to initialize and execute a workflow using `coreason-maco`:
 import asyncio
 from coreason_maco.core.controller import WorkflowController
 from coreason_maco.infrastructure.server_defaults import ServerRegistry
+
+# Optional: Import UserContext if available
+try:
+    from coreason_identity.models import UserContext
+except ImportError:
+    UserContext = None
 
 async def main():
     # 1. Initialize Services (Dependency Injection)
@@ -64,7 +71,8 @@ async def main():
 
     # 5. Execute Workflow
     print("Starting Workflow...")
-    async for event in controller.execute_recipe(manifest, inputs):
+    # Pass user_context (Optional)
+    async for event in controller.execute_recipe(manifest, inputs, user_context=None):
         print(f"Event: {event.event_type} | Node: {event.node_id} | Payload: {event.payload}")
 
 if __name__ == "__main__":
