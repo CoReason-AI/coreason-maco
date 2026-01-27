@@ -107,3 +107,48 @@ def test_service_sync_execute_recipe() -> None:
             assert events == [e1, e2]
             # Ensure execute_recipe called portal.call
             assert mock_portal.call.call_count == 3
+
+
+def test_service_sync_no_context() -> None:
+    svc = Service()
+    with pytest.raises(RuntimeError, match="Service must be used within a 'with' block"):
+        svc.execute_recipe({}, {})
+
+
+def test_service_sync_integration() -> None:
+    """Test Service with real BlockingPortal but mocked ServiceAsync."""
+    e1 = MagicMock(spec=GraphEvent)
+
+    with patch("coreason_maco.client.ServiceAsync") as MockServiceAsync:
+        mock_instance = MockServiceAsync.return_value
+
+        # Mock execute_recipe to return async generator
+        async def _mock_gen(*args: Any, **kwargs: Any) -> AsyncGenerator[GraphEvent, None]:
+            yield e1
+
+        mock_instance.execute_recipe.side_effect = _mock_gen
+        mock_instance.__aenter__ = AsyncMock(return_value=mock_instance)
+        mock_instance.__aexit__ = AsyncMock()
+
+        svc = Service()
+        with svc:
+            # This runs with real portal!
+            events = svc.execute_recipe({}, {})
+
+        assert events == [e1]
+
+        # Verify calls were propagated
+        mock_instance.__aenter__.assert_called_once()
+        mock_instance.__aexit__.assert_called_once()
+
+
+def test_service_simple_coverage() -> None:
+    """Ensure real Service + BlockingPortal runs end-to-end to catch __exit__ coverage."""
+    # We patch httpx to avoid network calls, but let BlockingPortal run for real
+    with patch("httpx.AsyncClient") as MockClient:
+        # AsyncClient must return an async close method
+        instance = MockClient.return_value
+        instance.aclose = AsyncMock()
+
+        with Service():
+            pass
