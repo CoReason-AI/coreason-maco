@@ -28,20 +28,18 @@ class GraphIntegrityError(Exception):
 
 
 class TopologyEngine:
-    """
-    Responsible for validating the graph topology and determining execution order.
-    """
+    """Responsible for validating the graph topology and determining execution order."""
 
     def build_graph(self, manifest: RecipeManifest) -> nx.DiGraph:
-        """
-        Builds a NetworkX DiGraph from the RecipeManifest.
+        """Builds a NetworkX DiGraph from the RecipeManifest.
+
         Validates the graph after building.
 
         Args:
             manifest: The RecipeManifest object.
 
         Returns:
-            A validated NetworkX DiGraph.
+            nx.DiGraph: A validated NetworkX DiGraph.
         """
         graph = nx.DiGraph(name=manifest.name)
 
@@ -61,8 +59,7 @@ class TopologyEngine:
         return graph
 
     def validate_graph(self, graph: nx.DiGraph) -> None:
-        """
-        Validates that the graph is acyclic and connected.
+        """Validates that the graph is acyclic and connected.
 
         Args:
             graph: The NetworkX DiGraph to validate.
@@ -79,14 +76,16 @@ class TopologyEngine:
                 raise GraphIntegrityError("The workflow graph contains disconnected islands.")
 
     def get_execution_layers(self, graph: nx.DiGraph) -> List[List[str]]:
-        """
-        Returns the topological generations (execution layers) of the graph.
+        """Returns the topological generations (execution layers) of the graph.
 
         Args:
             graph: The NetworkX DiGraph.
 
         Returns:
-            A list of lists, where each inner list contains node IDs that can be executed in parallel.
+            List[List[str]]: A list of lists, where each inner list contains node IDs that can be executed in parallel.
+
+        Raises:
+            CyclicDependencyError: If the graph contains a cycle (should be caught by validate_graph).
         """
         try:
             layers = list(nx.topological_generations(graph))

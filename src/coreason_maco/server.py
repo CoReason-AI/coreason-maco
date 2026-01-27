@@ -12,15 +12,20 @@ app = FastAPI(title="CoReason MACO", version="0.1.0")
 
 # --- 1. Define Request Models ---
 class ExecuteRequest(BaseModel):
+    """Request model for workflow execution."""
+
     manifest: Dict[str, Any]
     inputs: Dict[str, Any]
 
 
 # --- 2. Dependency Injection ---
 def get_controller() -> WorkflowController:
-    """
-    Dependency to provide the WorkflowController.
+    """Dependency to provide the WorkflowController.
+
     Allows for easier testing/overriding.
+
+    Returns:
+        WorkflowController: A configured WorkflowController instance.
     """
     services = ServerRegistry()
     return WorkflowController(services=services)
@@ -31,6 +36,11 @@ def get_controller() -> WorkflowController:
 
 @app.get("/health")  # type: ignore[misc]
 async def health_check() -> Dict[str, str]:
+    """Health check endpoint.
+
+    Returns:
+        Dict[str, str]: Status message.
+    """
     return {"status": "healthy"}
 
 
@@ -39,8 +49,17 @@ async def execute_workflow(
     request: ExecuteRequest,
     controller: WorkflowController = Depends(get_controller),  # noqa: B008
 ) -> Dict[str, Any]:
-    """
-    Executes a workflow and collects all events to return JSON.
+    """Executes a workflow and collects all events to return JSON.
+
+    Args:
+        request: The execution request containing manifest and inputs.
+        controller: The workflow controller dependency.
+
+    Returns:
+        Dict[str, Any]: The run ID and list of events.
+
+    Raises:
+        HTTPException: If execution fails.
     """
     events = []
     try:
