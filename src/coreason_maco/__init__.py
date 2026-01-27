@@ -16,9 +16,17 @@ __version__ = "0.1.0"
 __author__ = "Gowtham A Rao"
 __email__ = "gowtham.rao@coreason.ai"
 
+from .client import Service, ServiceAsync
 from .core.controller import WorkflowController
 from .engine.runner import WorkflowRunner
 from .events.protocol import GraphEvent
 from .main import hello_world
 
-__all__ = ["WorkflowController", "WorkflowRunner", "GraphEvent", "hello_world"]
+__all__ = [
+    "WorkflowController",
+    "WorkflowRunner",
+    "GraphEvent",
+    "hello_world",
+    "ServiceAsync",
+    "Service",
+]
