@@ -33,7 +33,7 @@ def mock_context() -> ExecutionContext:
     agent_executor.invoke = AsyncMock()
 
     # Mock tool registry
-    async def mock_execute(name: str, args: Dict[str, Any]) -> Any:
+    async def mock_execute(name: str, args: Dict[str, Any], user_context: Any = None) -> Any:
         return args
 
     tool_registry = MagicMock()

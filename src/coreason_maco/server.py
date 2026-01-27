@@ -1,7 +1,12 @@
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from fastapi import Depends, FastAPI, HTTPException
 from pydantic import BaseModel
+
+try:
+    from coreason_identity.models import UserContext
+except ImportError:  # pragma: no cover
+    UserContext = Any
 
 # Import core library components
 from coreason_maco.core.controller import WorkflowController
@@ -16,6 +21,7 @@ class ExecuteRequest(BaseModel):
 
     manifest: Dict[str, Any]
     inputs: Dict[str, Any]
+    user_context: Optional[UserContext] = None
 
 
 # --- 2. Dependency Injection ---
@@ -63,7 +69,9 @@ async def execute_workflow(
     """
     events = []
     try:
-        async for event in controller.execute_recipe(request.manifest, request.inputs):
+        async for event in controller.execute_recipe(
+            request.manifest, request.inputs, user_context=request.user_context
+        ):
             events.append(event.model_dump())
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e

@@ -22,7 +22,7 @@ from coreason_maco.events.protocol import FeedbackManager, GraphEvent
 
 
 class MockToolExecutor(ToolExecutor):
-    async def execute(self, tool_name: str, args: dict[str, Any]) -> Any:
+    async def execute(self, tool_name: str, args: dict[str, Any], user_context: Any = None) -> Any:
         return "mock_result"
 
 

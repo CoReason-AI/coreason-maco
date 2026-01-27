@@ -1,4 +1,9 @@
-from typing import Any, AsyncGenerator, Dict
+from typing import Any, AsyncGenerator, Dict, Optional
+
+try:
+    from coreason_identity.models import UserContext
+except ImportError:  # pragma: no cover
+    UserContext = Any
 
 from coreason_maco.core.interfaces import (
     AgentExecutor,
@@ -13,17 +18,23 @@ from coreason_maco.utils.logger import logger
 class ServerToolExecutor(ToolExecutor):  # pragma: no cover
     """Mock ToolExecutor for server mode."""
 
-    async def execute(self, tool_name: str, args: dict[str, Any]) -> Any:
+    async def execute(
+        self,
+        tool_name: str,
+        args: dict[str, Any],
+        user_context: Optional[UserContext] = None,
+    ) -> Any:
         """Executes a mock tool.
 
         Args:
             tool_name: The name of the tool.
             args: The arguments for the tool.
+            user_context: The user context.
 
         Returns:
             Any: Mock result.
         """
-        logger.info(f"Executing tool: {tool_name} with args: {args}")
+        logger.info(f"Executing tool: {tool_name} with args: {args} (user_context present: {user_context is not None})")
         return {
             "status": "executed",
             "tool": tool_name,

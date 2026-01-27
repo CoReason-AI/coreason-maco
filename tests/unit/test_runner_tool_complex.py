@@ -23,7 +23,7 @@ from coreason_maco.events.protocol import ExecutionContext
 class MockComplexToolExecutor(ToolExecutor):
     """Mock ToolExecutor that supports delays and errors."""
 
-    async def execute(self, tool_name: str, args: Dict[str, Any]) -> Any:
+    async def execute(self, tool_name: str, args: Dict[str, Any], user_context: Any = None) -> Any:
         if tool_name == "slow_tool":
             delay = args.get("delay", 0.1)
             await asyncio.sleep(delay)
