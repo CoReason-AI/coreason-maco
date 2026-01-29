@@ -13,6 +13,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import networkx as nx
 import pytest
+from coreason_identity.models import UserContext
 
 from coreason_maco.engine.runner import WorkflowRunner
 from coreason_maco.events.protocol import ExecutionContext, GraphEvent
@@ -33,12 +34,13 @@ def mock_agent_executor() -> Any:
 
 
 @pytest.fixture  # type: ignore
-def mock_context() -> ExecutionContext:
+def mock_context(mock_user_context: UserContext) -> ExecutionContext:
     return ExecutionContext(
         user_id="test_user",
         trace_id="test_trace",
         secrets_map={},
         tool_registry=MagicMock(),
+        user_context=mock_user_context,
     )
 
 

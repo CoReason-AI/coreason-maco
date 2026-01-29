@@ -11,11 +11,7 @@
 from typing import Any, AsyncGenerator, Dict, Optional
 
 import anyio
-
-try:
-    from coreason_identity.models import UserContext
-except ImportError:  # pragma: no cover
-    UserContext = Any
+from coreason_identity.models import UserContext
 
 from coreason_maco.core.interfaces import ServiceRegistry
 from coreason_maco.core.manifest import RecipeManifest
@@ -23,6 +19,7 @@ from coreason_maco.engine.runner import WorkflowRunner
 from coreason_maco.engine.topology import TopologyEngine
 from coreason_maco.events.protocol import GraphEvent
 from coreason_maco.utils.context import ExecutionContext, request_id_var
+from coreason_maco.utils.logger import logger
 
 
 class WorkflowController:
@@ -56,8 +53,9 @@ class WorkflowController:
         self,
         manifest: Dict[str, Any],
         inputs: Dict[str, Any],
+        *,
+        context: UserContext,
         resume_snapshot: Dict[str, Any] | None = None,
-        user_context: Optional[UserContext] = None,
     ) -> AsyncGenerator[GraphEvent, None]:
         """Executes a recipe based on the provided manifest and inputs.
 
@@ -66,9 +64,9 @@ class WorkflowController:
         Args:
             manifest: The raw recipe manifest dictionary.
             inputs: Input parameters for the execution.
+            context: The user context (identity passport).
             resume_snapshot: Optional snapshot of a previous execution to resume from.
                              Maps node_id -> output.
-            user_context: The user context (identity passport).
 
         Yields:
             GraphEvent: Real-time telemetry events.
@@ -76,6 +74,9 @@ class WorkflowController:
         Raises:
             ValueError: If required inputs are missing.
         """
+        if context is None:
+            raise ValueError("UserContext is required")
+
         # 1. Validate Manifest
         # Wrap CPU-heavy validation
         recipe_manifest = await anyio.to_thread.run_sync(lambda: RecipeManifest(**manifest))
@@ -99,15 +100,15 @@ class WorkflowController:
         # We need to construct ExecutionContext.
         # ExecutionContext requires: user_id, trace_id, secrets_map, tool_registry
 
-        user_id = inputs.get("user_id")
+        user_id = context.user_id
         trace_id = inputs.get("trace_id")
         secrets_map = inputs.get("secrets_map", {})
         feedback_manager = inputs.get("feedback_manager")
 
-        if not user_id:
-            raise ValueError("user_id is required in inputs")
         if not trace_id:
             raise ValueError("trace_id is required in inputs")
+
+        logger.info("Starting MACO session", user_id=user_id, session_id=trace_id)
 
         # Build kwargs dynamically to support optional feedback_manager
         ctx_kwargs = {
@@ -115,15 +116,15 @@ class WorkflowController:
             "trace_id": trace_id,
             "secrets_map": secrets_map,
             "tool_registry": self.services.tool_registry,
-            "user_context": user_context,
+            "user_context": context,
         }
         if feedback_manager:
             ctx_kwargs["feedback_manager"] = feedback_manager
 
-        context = ExecutionContext(**ctx_kwargs)
+        execution_context = ExecutionContext(**ctx_kwargs)
 
         # Set ContextVar for tracing
-        token = request_id_var.set(context.trace_id)
+        token = request_id_var.set(execution_context.trace_id)
 
         # 5. Run Workflow
         event_history = []
@@ -132,7 +133,7 @@ class WorkflowController:
         try:
             async for event in runner.run_workflow(
                 graph,
-                context,
+                execution_context,
                 resume_snapshot=resume_snapshot,
                 initial_inputs=inputs,
             ):
@@ -151,7 +152,7 @@ class WorkflowController:
                 # We also exclude 'secrets_map' to avoid logging sensitive data
                 loggable_inputs = {k: v for k, v in inputs.items() if k not in ["feedback_manager", "secrets_map"]}
                 await audit_logger.log_workflow_execution(
-                    trace_id=context.trace_id,
+                    trace_id=execution_context.trace_id,
                     run_id=run_id or "unknown",
                     manifest=manifest,
                     inputs=loggable_inputs,

@@ -15,9 +15,17 @@ def test_execute_workflow_error() -> None:
     }
     # Inputs that cause a validation error or similar to trigger the exception block
     inputs: Dict[str, Any] = {
-        # Missing user_id/trace_id to cause controller validation error
+        # Missing trace_id to cause controller validation error
+    }
+    user_context = {
+        "user_id": "u",
+        "email": "u@example.com",
+        "roles": [],
+        "metadata": {},
     }
 
-    response = client.post("/execute", json={"manifest": manifest, "inputs": inputs})
+    response = client.post(
+        "/execute", json={"manifest": manifest, "inputs": inputs, "user_context": user_context}
+    )
     assert response.status_code == 500
-    assert "user_id is required" in response.json()["detail"]
+    assert "trace_id is required" in response.json()["detail"]

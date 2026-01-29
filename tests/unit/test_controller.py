@@ -15,6 +15,8 @@ from unittest.mock import MagicMock
 import pytest
 from pydantic import ValidationError
 
+from coreason_identity.models import SecretStr, UserContext
+
 from coreason_maco.core.controller import WorkflowController
 from coreason_maco.core.interfaces import AgentExecutor, ServiceRegistry, ToolExecutor
 from coreason_maco.engine.topology import CyclicDependencyError
@@ -50,7 +52,7 @@ class MockServiceRegistry(ServiceRegistry):
 
 
 @pytest.mark.asyncio  # type: ignore
-async def test_controller_execution_flow() -> None:
+async def test_controller_execution_flow(mock_user_context: UserContext) -> None:
     # Setup
     services = MockServiceRegistry()
     mock_topology = MagicMock()
@@ -95,7 +97,7 @@ async def test_controller_execution_flow() -> None:
 
     # Execute
     events = []
-    async for event in controller.execute_recipe(manifest, inputs):
+    async for event in controller.execute_recipe(manifest, inputs, context=mock_user_context):
         events.append(event)
 
     # Assert
@@ -110,7 +112,7 @@ async def test_controller_execution_flow() -> None:
 
 
 @pytest.mark.asyncio  # type: ignore
-async def test_controller_missing_inputs() -> None:
+async def test_controller_missing_inputs(mock_user_context: UserContext) -> None:
     services = MockServiceRegistry()
     controller = WorkflowController(services)
 
@@ -120,23 +122,16 @@ async def test_controller_missing_inputs() -> None:
         "edges": [],
     }
 
-    # Missing user_id
-    inputs = {"trace_id": "123"}
-
-    with pytest.raises(ValueError, match="user_id is required"):
-        async for _ in controller.execute_recipe(manifest, inputs):
-            pass
-
     # Missing trace_id
     inputs = {"user_id": "123"}
 
     with pytest.raises(ValueError, match="trace_id is required"):
-        async for _ in controller.execute_recipe(manifest, inputs):
+        async for _ in controller.execute_recipe(manifest, inputs, context=mock_user_context):
             pass
 
 
 @pytest.mark.asyncio  # type: ignore
-async def test_controller_invalid_manifest() -> None:
+async def test_controller_invalid_manifest(mock_user_context: UserContext) -> None:
     services = MockServiceRegistry()
     controller = WorkflowController(services)
 
@@ -149,12 +144,12 @@ async def test_controller_invalid_manifest() -> None:
     inputs = {"user_id": "u", "trace_id": "t"}
 
     with pytest.raises(ValidationError):
-        async for _ in controller.execute_recipe(manifest, inputs):
+        async for _ in controller.execute_recipe(manifest, inputs, context=mock_user_context):
             pass
 
 
 @pytest.mark.asyncio  # type: ignore
-async def test_controller_topology_error() -> None:
+async def test_controller_topology_error(mock_user_context: UserContext) -> None:
     services = MockServiceRegistry()
     mock_topology = MagicMock()
     mock_topology.build_graph.side_effect = CyclicDependencyError("Cycle detected")
@@ -168,12 +163,12 @@ async def test_controller_topology_error() -> None:
     inputs = {"user_id": "u", "trace_id": "t"}
 
     with pytest.raises(CyclicDependencyError, match="Cycle detected"):
-        async for _ in controller.execute_recipe(manifest, inputs):
+        async for _ in controller.execute_recipe(manifest, inputs, context=mock_user_context):
             pass
 
 
 @pytest.mark.asyncio  # type: ignore
-async def test_controller_runtime_error() -> None:
+async def test_controller_runtime_error(mock_user_context: UserContext) -> None:
     services = MockServiceRegistry()
     mock_runner = MagicMock()
     mock_runner.run_workflow.side_effect = Exception("Runtime Failure")
@@ -188,12 +183,12 @@ async def test_controller_runtime_error() -> None:
     inputs = {"user_id": "u", "trace_id": "t"}
 
     with pytest.raises(Exception, match="Runtime Failure"):
-        async for _ in controller.execute_recipe(manifest, inputs):
+        async for _ in controller.execute_recipe(manifest, inputs, context=mock_user_context):
             pass
 
 
 @pytest.mark.asyncio  # type: ignore
-async def test_controller_empty_graph() -> None:
+async def test_controller_empty_graph(mock_user_context: UserContext) -> None:
     """Test valid manifest with 0 nodes runs without error (if topology allows)."""
     services = MockServiceRegistry()
     mock_topology = MagicMock()
@@ -215,7 +210,7 @@ async def test_controller_empty_graph() -> None:
     inputs = {"user_id": "u", "trace_id": "t"}
 
     events = []
-    async for event in controller.execute_recipe(manifest, inputs):
+    async for event in controller.execute_recipe(manifest, inputs, context=mock_user_context):
         events.append(event)
 
     assert len(events) == 0
@@ -251,7 +246,14 @@ async def test_controller_context_construction() -> None:
         "secrets_map": {"api_key": "123"},
     }
 
-    async for _ in controller.execute_recipe(manifest, inputs):
+    context = UserContext(
+        user_id="specific_user",
+        email="specific@example.com",
+        roles=[],
+        metadata={},
+    )
+
+    async for _ in controller.execute_recipe(manifest, inputs, context=context):
         pass
 
     # Verify run_workflow was called with correct context
@@ -276,7 +278,7 @@ async def test_controller_context_construction() -> None:
 
 
 @pytest.mark.asyncio  # type: ignore
-async def test_controller_no_audit_logger() -> None:
+async def test_controller_no_audit_logger(mock_user_context: UserContext) -> None:
     """Test controller execution when audit_logger is None."""
     services = MockServiceRegistry()
     services._audit_logger = None  # type: ignore
@@ -296,7 +298,7 @@ async def test_controller_no_audit_logger() -> None:
     manifest = {"name": "No Audit", "nodes": [], "edges": []}
     inputs = {"user_id": "u", "trace_id": "t"}
 
-    async for _ in controller.execute_recipe(manifest, inputs):
+    async for _ in controller.execute_recipe(manifest, inputs, context=mock_user_context):
         pass
 
     # Should run without error and just skip logging
@@ -304,7 +306,7 @@ async def test_controller_no_audit_logger() -> None:
 
 
 @pytest.mark.asyncio  # type: ignore
-async def test_controller_feedback_injection() -> None:
+async def test_controller_feedback_injection(mock_user_context: UserContext) -> None:
     """Test injecting feedback_manager via inputs."""
     services = MockServiceRegistry()
     mock_runner = MagicMock()
@@ -325,7 +327,7 @@ async def test_controller_feedback_injection() -> None:
     feedback_manager = FeedbackManager()
     inputs = {"user_id": "u", "trace_id": "t", "feedback_manager": feedback_manager}
 
-    async for _ in controller.execute_recipe(manifest, inputs):
+    async for _ in controller.execute_recipe(manifest, inputs, context=mock_user_context):
         pass
 
     # Verify context has feedback_manager
@@ -335,7 +337,7 @@ async def test_controller_feedback_injection() -> None:
 
 
 @pytest.mark.asyncio  # type: ignore
-async def test_controller_context_var_propagation() -> None:
+async def test_controller_context_var_propagation(mock_user_context: UserContext) -> None:
     """Verify that request_id_var is set correctly during execution."""
     from coreason_maco.utils.context import request_id_var
 
@@ -362,7 +364,7 @@ async def test_controller_context_var_propagation() -> None:
     manifest = {"name": "Ctx Test", "nodes": [], "edges": []}
     inputs = {"user_id": "u", "trace_id": "trace-123"}
 
-    async for _ in controller.execute_recipe(manifest, inputs):
+    async for _ in controller.execute_recipe(manifest, inputs, context=mock_user_context):
         pass
 
     # Verify it is reset

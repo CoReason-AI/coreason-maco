@@ -13,6 +13,7 @@ from typing import Any, AsyncGenerator, Dict
 from unittest.mock import MagicMock
 
 import pytest
+from coreason_identity.models import UserContext
 from pydantic import ValidationError
 
 from coreason_maco.core.controller import WorkflowController
@@ -92,7 +93,7 @@ class MockServiceRegistry(ServiceRegistry):
 
 
 @pytest.mark.asyncio  # type: ignore
-async def test_council_node_invalid_config() -> None:
+async def test_council_node_invalid_config(mock_user_context: UserContext) -> None:
     """Test that execution fails if the council config is invalid (missing fields)."""
     services = MockServiceRegistry()
     controller = WorkflowController(services)
@@ -105,19 +106,19 @@ async def test_council_node_invalid_config() -> None:
         ],
         "edges": [],
     }
-    inputs = {"user_id": "u", "trace_id": "t"}
+    inputs = {"trace_id": "t"}
 
     # Expect ValidationError from Pydantic when CouncilConfig is instantiated inside the runner
     # The runner catches exceptions in _execution_task? No, it raises them.
     # The task group in _execution_task will raise ExceptionGroup (Py3.11+) or the exception.
 
     with pytest.raises((ValidationError, ExceptionGroup)):
-        async for _ in controller.execute_recipe(manifest, inputs):
+        async for _ in controller.execute_recipe(manifest, inputs, context=mock_user_context):
             pass
 
 
 @pytest.mark.asyncio  # type: ignore
-async def test_council_node_execution_failure() -> None:
+async def test_council_node_execution_failure(mock_user_context: UserContext) -> None:
     """Test that runner propagates errors when Council Strategy fails completely."""
     # Setup agent executor that fails for the only agent
     mock_exec = MockAgentExecutor(failure_on="gpt-4")
@@ -135,16 +136,16 @@ async def test_council_node_execution_failure() -> None:
         ],
         "edges": [],
     }
-    inputs = {"user_id": "u", "trace_id": "t"}
+    inputs = {"trace_id": "t"}
 
     # Expect RuntimeError: "All council agents failed..."
     with pytest.raises((RuntimeError, ExceptionGroup)):
-        async for _ in controller.execute_recipe(manifest, inputs):
+        async for _ in controller.execute_recipe(manifest, inputs, context=mock_user_context):
             pass
 
 
 @pytest.mark.asyncio  # type: ignore
-async def test_parallel_council_nodes() -> None:
+async def test_parallel_council_nodes(mock_user_context: UserContext) -> None:
     """Test multiple Council nodes running in parallel."""
     # Setup
     mock_exec = MockAgentExecutor(
@@ -174,10 +175,10 @@ async def test_parallel_council_nodes() -> None:
             {"source": "Start", "target": "Council_B"},
         ],
     }
-    inputs = {"user_id": "u", "trace_id": "t"}
+    inputs = {"trace_id": "t"}
 
     events = []
-    async for event in controller.execute_recipe(manifest, inputs):
+    async for event in controller.execute_recipe(manifest, inputs, context=mock_user_context):
         events.append(event)
 
     # Verification
@@ -199,7 +200,7 @@ async def test_parallel_council_nodes() -> None:
 
 
 @pytest.mark.asyncio  # type: ignore
-async def test_council_node_missing_executor() -> None:
+async def test_council_node_missing_executor(mock_user_context: UserContext) -> None:
     """Test that missing agent_executor raises ValueError for Council node."""
     # To simulate missing executor, we need to pass None to WorkflowRunner.
     # We can do this by mocking ServiceRegistry to return None.
@@ -238,10 +239,10 @@ async def test_council_node_missing_executor() -> None:
         ],
         "edges": [],
     }
-    inputs = {"user_id": "u", "trace_id": "t"}
+    inputs = {"trace_id": "t"}
 
     with pytest.raises((ValueError, ExceptionGroup)) as excinfo:
-        async for _ in controller.execute_recipe(manifest, inputs):
+        async for _ in controller.execute_recipe(manifest, inputs, context=mock_user_context):
             pass
 
     # Check error message

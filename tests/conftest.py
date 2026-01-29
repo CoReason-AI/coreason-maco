@@ -9,6 +9,7 @@
 # Source Code: https://github.com/CoReason-AI/coreason_maco
 
 import pytest
+from coreason_identity.models import SecretStr, UserContext
 
 pytest_plugins = ("pytest_asyncio",)
 
@@ -16,3 +17,13 @@ pytest_plugins = ("pytest_asyncio",)
 @pytest.fixture  # type: ignore[misc]
 def anyio_backend() -> str:
     return "asyncio"
+
+
+@pytest.fixture
+def mock_user_context() -> UserContext:
+    return UserContext(
+        user_id="test-user",
+        email="test@example.com",
+        roles=["tester"],
+        metadata={"source": "test"},
+    )
