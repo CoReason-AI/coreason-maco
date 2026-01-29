@@ -12,6 +12,7 @@ from typing import Any, AsyncGenerator
 from unittest.mock import MagicMock
 
 import pytest
+from coreason_identity.models import UserContext
 
 from coreason_maco.core.controller import WorkflowController
 from coreason_maco.core.interfaces import AgentExecutor, ServiceRegistry, ToolExecutor
@@ -47,7 +48,7 @@ class MockServiceRegistry(ServiceRegistry):
 
 
 @pytest.mark.asyncio  # type: ignore
-async def test_controller_passes_resume_snapshot() -> None:
+async def test_controller_passes_resume_snapshot(mock_user_context: UserContext) -> None:
     """
     Verify that WorkflowController.execute_recipe correctly propagates
     the 'resume_snapshot' argument to WorkflowRunner.run_workflow.
@@ -76,7 +77,6 @@ async def test_controller_passes_resume_snapshot() -> None:
     }
 
     inputs = {
-        "user_id": "u",
         "trace_id": "t",
         "some_input": "val",
     }
@@ -87,7 +87,9 @@ async def test_controller_passes_resume_snapshot() -> None:
     }
 
     # Execute with resume_snapshot
-    async for _ in controller.execute_recipe(manifest, inputs, resume_snapshot=resume_snapshot):
+    async for _ in controller.execute_recipe(
+        manifest, inputs, context=mock_user_context, resume_snapshot=resume_snapshot
+    ):
         pass
 
     # Verify run_workflow was called with correct arguments

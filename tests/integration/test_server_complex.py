@@ -19,9 +19,15 @@ def test_complex_workflow_execution() -> None:
             {"source": "B", "target": "C"},
         ],
     }
-    inputs = {"user_id": "u", "trace_id": "t"}
+    inputs = {"trace_id": "t"}
+    user_context = {
+        "user_id": "u",
+        "email": "u@example.com",
+        "roles": [],
+        "metadata": {},
+    }
 
-    response = client.post("/execute", json={"manifest": manifest, "inputs": inputs})
+    response = client.post("/execute", json={"manifest": manifest, "inputs": inputs, "user_context": user_context})
     assert response.status_code == 200
 
     data = response.json()

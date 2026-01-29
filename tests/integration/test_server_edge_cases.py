@@ -14,9 +14,15 @@ def test_invalid_manifest_structure() -> None:
         # "nodes": []  <-- Missing
         "edges": [],
     }
-    inputs: Dict[str, Any] = {"user_id": "u", "trace_id": "t"}
+    inputs: Dict[str, Any] = {"trace_id": "t"}
+    user_context = {
+        "user_id": "u",
+        "email": "u@example.com",
+        "roles": [],
+        "metadata": {},
+    }
 
-    response = client.post("/execute", json={"manifest": manifest, "inputs": inputs})
+    response = client.post("/execute", json={"manifest": manifest, "inputs": inputs, "user_context": user_context})
 
     # Pydantic validation error is handled by FastAPI's default exception handler (422)
     # OR by the controller validation if it passes the Pydantic model check first.
@@ -37,14 +43,20 @@ def test_missing_inputs() -> None:
         "edges": [],
     }
     inputs: Dict[str, Any] = {
-        # Missing user_id and trace_id
+        # Missing trace_id
+    }
+    user_context = {
+        "user_id": "u",
+        "email": "u@example.com",
+        "roles": [],
+        "metadata": {},
     }
 
-    response = client.post("/execute", json={"manifest": manifest, "inputs": inputs})
+    response = client.post("/execute", json={"manifest": manifest, "inputs": inputs, "user_context": user_context})
 
     # Controller raises ValueError
     assert response.status_code == 500
-    assert "user_id is required" in response.json()["detail"]
+    assert "trace_id is required" in response.json()["detail"]
 
 
 def test_empty_execution() -> None:
@@ -54,9 +66,15 @@ def test_empty_execution() -> None:
         "nodes": [],
         "edges": [],
     }
-    inputs = {"user_id": "u", "trace_id": "t"}
+    inputs = {"trace_id": "t"}
+    user_context = {
+        "user_id": "u",
+        "email": "u@example.com",
+        "roles": [],
+        "metadata": {},
+    }
 
-    response = client.post("/execute", json={"manifest": manifest, "inputs": inputs})
+    response = client.post("/execute", json={"manifest": manifest, "inputs": inputs, "user_context": user_context})
 
     assert response.status_code == 200
     data = response.json()

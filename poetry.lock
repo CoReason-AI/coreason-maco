@@ -2,14 +2,14 @@
 
 [[package]]
 name = "aiofiles"
-version = "24.1.0"
+version = "25.1.0"
 description = "File support for asyncio."
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "aiofiles-24.1.0-py3-none-any.whl", hash = "sha256:b4ec55f4195e3eb5d7abd1bf7e061763e864dd4954231fb8539a0ef8bb8260e5"},
-    {file = "aiofiles-24.1.0.tar.gz", hash = "sha256:22a075c9e5a3810f0c2e48f3008c94d68c65d763b9b03857924c99e57355166c"},
+    {file = "aiofiles-25.1.0-py3-none-any.whl", hash = "sha256:abe311e527c862958650f9438e859c1fa7568a141b22abcd015e120e86a85695"},
+    {file = "aiofiles-25.1.0.tar.gz", hash = "sha256:a8d728f0a29de45dc521f18f07297428d56992a742f0cd2701ba86e44d23d5b2"},
 ]
 
 [[package]]
@@ -380,17 +380,19 @@ markers = {main = "sys_platform == \"win32\" or platform_system == \"Windows\""}
 
 [[package]]
 name = "coreason-identity"
-version = "0.2.0"
+version = "0.4.2"
 description = "Decoupled authentication middleware, abstracting OIDC and OAuth2 protocols from the main application."
 optional = false
 python-versions = "<3.15,>=3.11"
 groups = ["main"]
 files = [
-    {file = "coreason_identity-0.2.0-py3-none-any.whl", hash = "sha256:542adc85af8042b94e58230a9e6ebc0c7da39e2c3bb30c1165d86b4371f04302"},
-    {file = "coreason_identity-0.2.0.tar.gz", hash = "sha256:feccfbd996653fd83651232b9acfb68ecfdbc657550ad44cb19edd7944ba0b4b"},
+    {file = "coreason_identity-0.4.2-py3-none-any.whl", hash = "sha256:cdf141ab9e7d6b789795e5b79f9ac5458dd8ef6f5e8f400fb7570b4254c10499"},
+    {file = "coreason_identity-0.4.2.tar.gz", hash = "sha256:efceb13345994b575b90ecd51d9307508d88c471ee18df1e15e74a6c5dc94ab8"},
 ]
 
 [package.dependencies]
+aiofiles = ">=25.1.0,<26.0.0"
+anyio = ">=4.12.1,<5.0.0"
 authlib = ">=1.6.6,<2.0.0"
 email-validator = ">=2.3.0,<3.0.0"
 httpx = ">=0.28.1,<0.29.0"
@@ -398,6 +400,7 @@ loguru = ">=0.7.2,<0.8.0"
 opentelemetry-api = ">=1.39.1,<2.0.0"
 pydantic = ">=2.12.5,<3.0.0"
 pydantic-settings = ">=2.12.0,<3.0.0"
+types-aiofiles = ">=25.1.0,<26.0.0"
 
 [[package]]
 name = "coverage"
@@ -1711,14 +1714,14 @@ full = ["httpx (>=0.27.0,<0.29.0)", "itsdangerous", "jinja2", "python-multipart 
 
 [[package]]
 name = "types-aiofiles"
-version = "24.1.0.20250822"
+version = "25.1.0.20251011"
 description = "Typing stubs for aiofiles"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "types_aiofiles-24.1.0.20250822-py3-none-any.whl", hash = "sha256:0ec8f8909e1a85a5a79aed0573af7901f53120dd2a29771dd0b3ef48e12328b0"},
-    {file = "types_aiofiles-24.1.0.20250822.tar.gz", hash = "sha256:9ab90d8e0c307fe97a7cf09338301e3f01a163e39f3b529ace82466355c84a7b"},
+    {file = "types_aiofiles-25.1.0.20251011-py3-none-any.whl", hash = "sha256:8ff8de7f9d42739d8f0dadcceeb781ce27cd8d8c4152d4a7c52f6b20edb8149c"},
+    {file = "types_aiofiles-25.1.0.20251011.tar.gz", hash = "sha256:1c2b8ab260cb3cd40c15f9d10efdc05a6e1e6b02899304d80dfa0410e028d3ff"},
 ]
 
 [[package]]
@@ -1888,4 +1891,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12, !=3.14.1, <3.15"
-content-hash = "203f08430d2f3abc80872cf286f4d146c9d47078d0dd2b4496b4742020f0b6e6"
+content-hash = "3702c333783be4224b79048ec5b3f59d7351dd2175e119bdd83254a1da091921"
