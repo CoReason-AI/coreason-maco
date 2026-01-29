@@ -29,7 +29,7 @@ async def run_workflow(manifest: Dict[str, Any], inputs: Dict[str, Any]) -> None
 
     system_context = UserContext(
         user_id="cli-user",
-        email="cli@system.local",
+        email="cli@system.com",
         roles=["system"],
         metadata={"source": "cli"},
     )

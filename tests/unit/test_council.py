@@ -118,3 +118,13 @@ async def test_council_synthesizer_fail(mock_user_context: UserContext) -> None:
 
     with pytest.raises(RuntimeError, match="Synthesizer agent failed"):
         await strategy.execute("Color?", config, context=mock_user_context)
+
+
+@pytest.mark.asyncio  # type: ignore
+async def test_council_missing_context() -> None:
+    config = CouncilConfig(agents=[{"model": "gpt-4"}], synthesizer={"model": "judge"})
+    mock_exec = MockAgentExecutor()
+    strategy = CouncilStrategy(mock_exec)
+
+    with pytest.raises(ValueError, match="UserContext is required"):
+        await strategy.execute("Color?", config, context=None)  # type: ignore
