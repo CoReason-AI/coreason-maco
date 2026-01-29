@@ -12,6 +12,7 @@ from typing import Any, AsyncGenerator
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from coreason_identity.models import UserContext
 
 from coreason_maco.core.controller import WorkflowController
 from coreason_maco.core.interfaces import AgentExecutor, AuditLogger, ServiceRegistry, ToolExecutor
@@ -40,7 +41,7 @@ class MockServiceRegistry(ServiceRegistry):
 
 
 @pytest.mark.asyncio  # type: ignore
-async def test_input_sanitization_complex() -> None:
+async def test_input_sanitization_complex(mock_user_context: UserContext) -> None:
     """
     Verify that audit logging sanitization strictly removes specific keys
     but preserves others, including complex nested data.
@@ -63,7 +64,6 @@ async def test_input_sanitization_complex() -> None:
     feedback_manager = FeedbackManager()
 
     inputs = {
-        "user_id": "u",
         "trace_id": "t",
         "feedback_manager": feedback_manager,  # Should be removed
         "secrets_map": {"api_key": "123"},  # Should be removed
@@ -73,7 +73,7 @@ async def test_input_sanitization_complex() -> None:
 
     manifest = {"name": "Test", "nodes": [], "edges": []}
 
-    async for _ in controller.execute_recipe(manifest, inputs):
+    async for _ in controller.execute_recipe(manifest, inputs, context=mock_user_context):
         pass
 
     # Verify Audit Log call
@@ -91,7 +91,7 @@ async def test_input_sanitization_complex() -> None:
 
 
 @pytest.mark.asyncio  # type: ignore
-async def test_audit_logging_on_workflow_failure() -> None:
+async def test_audit_logging_on_workflow_failure(mock_user_context: UserContext) -> None:
     """
     Verify that audit logs are written even if the workflow runner raises an exception.
     This ensures partial executions are audited for debugging/compliance.
@@ -118,11 +118,11 @@ async def test_audit_logging_on_workflow_failure() -> None:
 
     controller = WorkflowController(services, runner_cls=MockRunnerCls)
     manifest = {"name": "Crash Test", "nodes": [], "edges": []}
-    inputs = {"user_id": "u", "trace_id": "t"}
+    inputs = {"trace_id": "t"}
 
     # We expect the exception to bubble up
     with pytest.raises(RuntimeError, match="Workflow Crashed"):
-        async for _ in controller.execute_recipe(manifest, inputs):
+        async for _ in controller.execute_recipe(manifest, inputs, context=mock_user_context):
             pass
 
     # CRITICAL: Audit logger should still be called with the events collected so far

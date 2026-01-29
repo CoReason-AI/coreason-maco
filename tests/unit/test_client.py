@@ -2,6 +2,7 @@ from typing import Any, AsyncGenerator
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from coreason_identity.models import UserContext
 
 from coreason_maco.client import Service, ServiceAsync
 from coreason_maco.events.protocol import GraphEvent
@@ -31,14 +32,16 @@ async def test_service_async_lifecycle_internal_client() -> None:
 
 
 @pytest.mark.asyncio  # type: ignore[misc]
-async def test_service_async_execute_recipe() -> None:
+async def test_service_async_execute_recipe(mock_user_context: UserContext) -> None:
     service = ServiceAsync()
 
     e1 = MagicMock(spec=GraphEvent)
     e2 = MagicMock(spec=GraphEvent)
 
     # Create an async generator for the mock return value
-    async def _async_gen(manifest: Any, inputs: Any, resume_snapshot: Any) -> AsyncGenerator[GraphEvent, None]:
+    async def _async_gen(
+        manifest: Any, inputs: Any, *, context: Any, resume_snapshot: Any
+    ) -> AsyncGenerator[GraphEvent, None]:
         yield e1
         yield e2
 
@@ -47,7 +50,7 @@ async def test_service_async_execute_recipe() -> None:
     service._controller.execute_recipe.side_effect = _async_gen
 
     events = []
-    async for event in service.execute_recipe({}, {}):
+    async for event in service.execute_recipe({}, {}, context=mock_user_context):
         events.append(event)
 
     assert events == [e1, e2]
@@ -84,7 +87,7 @@ def test_service_sync_lifecycle() -> None:
             mock_portal_cm.__exit__.assert_called_once()
 
 
-def test_service_sync_execute_recipe() -> None:
+def test_service_sync_execute_recipe(mock_user_context: UserContext) -> None:
     e1 = MagicMock(spec=GraphEvent)
     e2 = MagicMock(spec=GraphEvent)
 
@@ -102,20 +105,20 @@ def test_service_sync_execute_recipe() -> None:
         with patch("coreason_maco.client.ServiceAsync"):
             svc = Service()
             with svc:
-                events = svc.execute_recipe({}, {})
+                events = svc.execute_recipe({}, {}, context=mock_user_context)
 
             assert events == [e1, e2]
             # Ensure execute_recipe called portal.call
             assert mock_portal.call.call_count == 3
 
 
-def test_service_sync_no_context() -> None:
+def test_service_sync_no_context(mock_user_context: UserContext) -> None:
     svc = Service()
     with pytest.raises(RuntimeError, match="Service must be used within a 'with' block"):
-        svc.execute_recipe({}, {})
+        svc.execute_recipe({}, {}, context=mock_user_context)
 
 
-def test_service_sync_integration() -> None:
+def test_service_sync_integration(mock_user_context: UserContext) -> None:
     """Test Service with real BlockingPortal but mocked ServiceAsync."""
     e1 = MagicMock(spec=GraphEvent)
 
@@ -133,7 +136,7 @@ def test_service_sync_integration() -> None:
         svc = Service()
         with svc:
             # This runs with real portal!
-            events = svc.execute_recipe({}, {})
+            events = svc.execute_recipe({}, {}, context=mock_user_context)
 
         assert events == [e1]
 

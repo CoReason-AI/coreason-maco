@@ -12,6 +12,8 @@ import asyncio
 from typing import Any, AsyncGenerator, Dict
 from unittest.mock import AsyncMock, MagicMock
 
+from coreason_identity.models import UserContext
+
 from coreason_maco.core.controller import WorkflowController
 from coreason_maco.core.interfaces import AgentResponse
 
@@ -103,10 +105,16 @@ async def main() -> None:
         ],
     }
 
-    inputs = {"user_id": "test_user", "trace_id": "test_trace_123"}
+    inputs = {"trace_id": "test_trace_123"}
+    context = UserContext(
+        user_id="test_user",
+        email="test@example.com",
+        roles=[],
+        metadata={},
+    )
 
     print("Starting Workflow Execution...")
-    async for event in controller.execute_recipe(manifest, inputs):
+    async for event in controller.execute_recipe(manifest, inputs, context=context):
         if event.event_type == "NODE_DONE":
             print(f"[Event] Node {event.node_id} Done. Output: {event.payload['output_summary']}")
         elif event.event_type == "ERROR":

@@ -13,6 +13,7 @@ from typing import Any, AsyncGenerator, Dict, List
 from unittest.mock import MagicMock
 
 import pytest
+from coreason_identity.models import UserContext
 
 from coreason_maco.core.controller import WorkflowController
 from coreason_maco.core.interfaces import AgentExecutor, AgentResponse, ServiceRegistry, ToolExecutor
@@ -82,7 +83,7 @@ class MockServiceRegistry(ServiceRegistry):
 
 
 @pytest.mark.asyncio  # type: ignore
-async def test_runner_executes_council_node() -> None:
+async def test_runner_executes_council_node(mock_user_context: UserContext) -> None:
     # 1. Setup Services
     mock_agent_exec = MockAgentExecutor(responses={"gpt-4": "Blue", "claude": "Red"})
     services = MockServiceRegistry(agent_executor=mock_agent_exec)
@@ -107,11 +108,11 @@ async def test_runner_executes_council_node() -> None:
         "edges": [],
     }
 
-    inputs = {"user_id": "u", "trace_id": "t"}
+    inputs = {"trace_id": "t"}
 
     # 4. Execute
     events: List[GraphEvent] = []
-    async for event in controller.execute_recipe(manifest, inputs):
+    async for event in controller.execute_recipe(manifest, inputs, context=mock_user_context):
         events.append(event)
 
     # 5. Verify
