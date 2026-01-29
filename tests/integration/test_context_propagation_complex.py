@@ -138,5 +138,5 @@ async def test_propagation_missing_context() -> None:
 
     # Pass None explicitly (default) - Should raise TypeError/ValueError
     with pytest.raises((TypeError, ValueError)):
-        async for _ in controller.execute_recipe(manifest, inputs, context=None):  # type: ignore
+        async for _ in controller.execute_recipe(manifest, inputs, context=None):
             pass
