@@ -127,4 +127,4 @@ async def test_council_missing_context() -> None:
     strategy = CouncilStrategy(mock_exec)
 
     with pytest.raises(ValueError, match="UserContext is required"):
-        await strategy.execute("Color?", config, context=None)  # type: ignore
+        await strategy.execute("Color?", config, context=None)
