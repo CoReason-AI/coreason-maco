@@ -24,8 +24,6 @@ def test_execute_workflow_error() -> None:
         "metadata": {},
     }
 
-    response = client.post(
-        "/execute", json={"manifest": manifest, "inputs": inputs, "user_context": user_context}
-    )
+    response = client.post("/execute", json={"manifest": manifest, "inputs": inputs, "user_context": user_context})
     assert response.status_code == 500
     assert "trace_id is required" in response.json()["detail"]

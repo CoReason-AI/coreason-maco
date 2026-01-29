@@ -22,9 +22,7 @@ def test_invalid_manifest_structure() -> None:
         "metadata": {},
     }
 
-    response = client.post(
-        "/execute", json={"manifest": manifest, "inputs": inputs, "user_context": user_context}
-    )
+    response = client.post("/execute", json={"manifest": manifest, "inputs": inputs, "user_context": user_context})
 
     # Pydantic validation error is handled by FastAPI's default exception handler (422)
     # OR by the controller validation if it passes the Pydantic model check first.
@@ -54,9 +52,7 @@ def test_missing_inputs() -> None:
         "metadata": {},
     }
 
-    response = client.post(
-        "/execute", json={"manifest": manifest, "inputs": inputs, "user_context": user_context}
-    )
+    response = client.post("/execute", json={"manifest": manifest, "inputs": inputs, "user_context": user_context})
 
     # Controller raises ValueError
     assert response.status_code == 500
@@ -78,9 +74,7 @@ def test_empty_execution() -> None:
         "metadata": {},
     }
 
-    response = client.post(
-        "/execute", json={"manifest": manifest, "inputs": inputs, "user_context": user_context}
-    )
+    response = client.post("/execute", json={"manifest": manifest, "inputs": inputs, "user_context": user_context})
 
     assert response.status_code == 200
     data = response.json()

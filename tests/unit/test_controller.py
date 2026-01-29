@@ -13,9 +13,8 @@ from typing import Any, AsyncGenerator
 from unittest.mock import MagicMock
 
 import pytest
+from coreason_identity.models import UserContext
 from pydantic import ValidationError
-
-from coreason_identity.models import SecretStr, UserContext
 
 from coreason_maco.core.controller import WorkflowController
 from coreason_maco.core.interfaces import AgentExecutor, ServiceRegistry, ToolExecutor

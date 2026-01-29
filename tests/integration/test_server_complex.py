@@ -27,9 +27,7 @@ def test_complex_workflow_execution() -> None:
         "metadata": {},
     }
 
-    response = client.post(
-        "/execute", json={"manifest": manifest, "inputs": inputs, "user_context": user_context}
-    )
+    response = client.post("/execute", json={"manifest": manifest, "inputs": inputs, "user_context": user_context})
     assert response.status_code == 200
 
     data = response.json()

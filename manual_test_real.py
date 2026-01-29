@@ -12,7 +12,7 @@ import asyncio
 from typing import Any, AsyncGenerator, Dict
 from unittest.mock import AsyncMock, MagicMock
 
-from coreason_identity.models import SecretStr, UserContext
+from coreason_identity.models import UserContext
 
 from coreason_maco.core.controller import WorkflowController
 from coreason_maco.core.interfaces import AgentResponse

@@ -8,10 +8,9 @@
 #
 # Source Code: https://github.com/CoReason-AI/coreason_maco
 
-import asyncio
 from typing import Any, Dict
 
-from coreason_identity.models import SecretStr, UserContext
+from coreason_identity.models import UserContext
 
 from coreason_maco.core.controller import WorkflowController
 from coreason_maco.infrastructure.server_defaults import ServerRegistry
@@ -35,6 +34,6 @@ async def run_workflow(manifest: Dict[str, Any], inputs: Dict[str, Any]) -> None
         metadata={"source": "cli"},
     )
 
-    async for event in controller.execute_recipe(manifest, inputs, context=system_context):
+    async for _ in controller.execute_recipe(manifest, inputs, context=system_context):
         # In a real CLI, we would print events
         pass

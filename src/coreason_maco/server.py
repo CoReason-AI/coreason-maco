@@ -65,9 +65,7 @@ async def execute_workflow(
     """
     events = []
     try:
-        async for event in controller.execute_recipe(
-            request.manifest, request.inputs, context=request.user_context
-        ):
+        async for event in controller.execute_recipe(request.manifest, request.inputs, context=request.user_context):
             events.append(event.model_dump())
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
