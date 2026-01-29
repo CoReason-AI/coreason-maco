@@ -36,7 +36,7 @@ def get_controller() -> WorkflowController:
 # --- 3. API Endpoints ---
 
 
-@app.get("/health")  # type: ignore[misc]
+@app.get("/health")  # type: ignore[untyped-decorator]
 async def health_check() -> Dict[str, str]:
     """Health check endpoint.
 
@@ -46,7 +46,7 @@ async def health_check() -> Dict[str, str]:
     return {"status": "healthy"}
 
 
-@app.post("/execute")  # type: ignore[misc]
+@app.post("/execute")  # type: ignore[untyped-decorator]
 async def execute_workflow(
     request: ExecuteRequest,
     controller: WorkflowController = Depends(get_controller),  # noqa: B008
