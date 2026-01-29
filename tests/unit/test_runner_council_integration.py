@@ -13,6 +13,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import networkx as nx
 import pytest
+from coreason_identity.models import UserContext
 
 from coreason_maco.engine.runner import WorkflowRunner
 from coreason_maco.events.protocol import ExecutionContext, GraphEvent
@@ -33,12 +34,13 @@ def mock_agent_executor() -> Any:
 
 
 @pytest.fixture  # type: ignore
-def mock_context() -> ExecutionContext:
+def mock_context(mock_user_context: UserContext) -> ExecutionContext:
     return ExecutionContext(
         user_id="test_user",
         trace_id="test_trace",
         secrets_map={},
         tool_registry=MagicMock(),
+        user_context=mock_user_context,
     )
 
 
@@ -76,3 +78,36 @@ async def test_runner_executes_council_node(mock_context: ExecutionContext, mock
     done_events = [e for e in events if e.event_type == "NODE_DONE"]
     assert len(done_events) == 1
     assert done_events[0].payload["output_summary"] == "Mock Response"
+
+
+@pytest.mark.asyncio  # type: ignore
+async def test_runner_council_node_missing_context_in_handler(mock_agent_executor: Any) -> None:
+    """Test that CouncilNodeHandler fails when UserContext is missing in ExecutionContext."""
+    graph = nx.DiGraph()
+    council_config = {
+        "agents": [{"model": "gpt-4"}],
+        "synthesizer": {"model": "gpt-4"},
+    }
+    graph.add_node("CouncilNode", type="COUNCIL", config=council_config)
+
+    # Context without user_context
+    context = ExecutionContext(
+        user_id="test_user",
+        trace_id="test_trace",
+        secrets_map={},
+        tool_registry=MagicMock(),
+        user_context=None,
+    )
+
+    runner = WorkflowRunner(agent_executor=mock_agent_executor)
+
+    with pytest.raises((ExceptionGroup, ValueError)) as excinfo:
+        async for _ in runner.run_workflow(graph, context):
+            pass
+
+    # Check if ValueError is in the exception group or raised directly
+    err = excinfo.value
+    if isinstance(err, ExceptionGroup):
+        assert any("UserContext is required" in str(e) for e in err.exceptions)
+    else:
+        assert "UserContext is required" in str(err)

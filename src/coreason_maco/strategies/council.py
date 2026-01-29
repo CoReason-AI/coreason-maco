@@ -11,9 +11,11 @@
 import asyncio
 from typing import Any, Dict, List
 
+from coreason_identity.models import UserContext
 from pydantic import BaseModel, ConfigDict, Field
 
 from coreason_maco.core.interfaces import AgentExecutor
+from coreason_maco.utils.logger import logger
 
 
 class CouncilConfig(BaseModel):
@@ -46,7 +48,7 @@ class CouncilStrategy:
         """
         self.executor = executor
 
-    async def execute(self, prompt: str, config: CouncilConfig) -> CouncilResult:
+    async def execute(self, prompt: str, config: CouncilConfig, context: UserContext) -> CouncilResult:
         """Executes the council strategy.
 
         Fan out to multiple agents (Map), then synthesize results (Reduce).
@@ -54,13 +56,20 @@ class CouncilStrategy:
         Args:
             prompt: The input prompt/question.
             config: The configuration for the council.
+            context: The user context.
 
         Returns:
             CouncilResult: The synthesized consensus and individual votes.
 
         Raises:
             RuntimeError: If all agents fail or synthesizer fails.
+            ValueError: If context is missing.
         """
+        if context is None:
+            raise ValueError("UserContext is required for Council Strategy")
+
+        logger.debug("Executing Council Strategy", user_id=context.user_id)
+
         # Map Phase: Fan out to all agents
         tasks = []
         for agent_config in config.agents:

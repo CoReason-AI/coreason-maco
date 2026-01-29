@@ -12,14 +12,10 @@ from typing import Any, Dict
 from unittest.mock import MagicMock
 
 import pytest
+from coreason_identity.models import UserContext
 
 from coreason_maco.core.controller import WorkflowController
 from coreason_maco.core.interfaces import AgentExecutor, ServiceRegistry, ToolExecutor
-
-try:
-    from coreason_identity.models import UserContext
-except ImportError:
-    UserContext = Any
 
 
 class VerifyingToolExecutor(ToolExecutor):
@@ -72,16 +68,11 @@ class MockServiceRegistry(ServiceRegistry):
 
 
 @pytest.mark.asyncio  # type: ignore
-async def test_propagation_sequential_workflow() -> None:
+async def test_propagation_sequential_workflow(mock_user_context: UserContext) -> None:
     """Test context flows through a chain of tools."""
     tool_executor = VerifyingToolExecutor()
     services = MockServiceRegistry(tool_executor)
     controller = WorkflowController(services)
-
-    try:
-        user_ctx = UserContext(sub="user_123", email="test@example.com", project_context={}, permissions=[])
-    except Exception:
-        user_ctx = None
 
     manifest = {
         "name": "Sequential",
@@ -91,27 +82,22 @@ async def test_propagation_sequential_workflow() -> None:
         ],
         "edges": [{"source": "A", "target": "B"}],
     }
-    inputs = {"user_id": "u", "trace_id": "t"}
+    inputs = {"trace_id": "t"}
 
-    async for _ in controller.execute_recipe(manifest, inputs, user_context=user_ctx):
+    async for _ in controller.execute_recipe(manifest, inputs, context=mock_user_context):
         pass
 
     assert len(tool_executor.calls) == 2
-    assert tool_executor.calls[0]["user_context"] is user_ctx
-    assert tool_executor.calls[1]["user_context"] is user_ctx
+    assert tool_executor.calls[0]["user_context"] is mock_user_context
+    assert tool_executor.calls[1]["user_context"] is mock_user_context
 
 
 @pytest.mark.asyncio  # type: ignore
-async def test_propagation_parallel_branching() -> None:
+async def test_propagation_parallel_branching(mock_user_context: UserContext) -> None:
     """Test context flows to parallel branches."""
     tool_executor = VerifyingToolExecutor()
     services = MockServiceRegistry(tool_executor)
     controller = WorkflowController(services)
-
-    try:
-        user_ctx = UserContext(sub="user_parallel", email="test@example.com", project_context={}, permissions=[])
-    except Exception:
-        user_ctx = None
 
     manifest = {
         "name": "Parallel",
@@ -125,20 +111,20 @@ async def test_propagation_parallel_branching() -> None:
             {"source": "Start", "target": "Branch2"},
         ],
     }
-    inputs = {"user_id": "u", "trace_id": "t"}
+    inputs = {"trace_id": "t"}
 
-    async for _ in controller.execute_recipe(manifest, inputs, user_context=user_ctx):
+    async for _ in controller.execute_recipe(manifest, inputs, context=mock_user_context):
         pass
 
     assert len(tool_executor.calls) == 3
     # Check consistency
     for call in tool_executor.calls:
-        assert call["user_context"] is user_ctx
+        assert call["user_context"] is mock_user_context
 
 
 @pytest.mark.asyncio  # type: ignore
-async def test_propagation_none_context() -> None:
-    """Test robust execution when UserContext is None."""
+async def test_propagation_missing_context() -> None:
+    """Test robust execution when UserContext is missing (Should raise error now)."""
     tool_executor = VerifyingToolExecutor()
     services = MockServiceRegistry(tool_executor)
     controller = WorkflowController(services)
@@ -148,11 +134,9 @@ async def test_propagation_none_context() -> None:
         "nodes": [{"id": "A", "type": "TOOL", "config": {"tool_name": "ToolA"}}],
         "edges": [],
     }
-    inputs = {"user_id": "u", "trace_id": "t"}
+    inputs = {"trace_id": "t"}
 
-    # Pass None explicitly (default)
-    async for _ in controller.execute_recipe(manifest, inputs, user_context=None):
-        pass
-
-    assert len(tool_executor.calls) == 1
-    assert tool_executor.calls[0]["user_context"] is None
+    # Pass None explicitly (default) - Should raise TypeError/ValueError
+    with pytest.raises((TypeError, ValueError)):
+        async for _ in controller.execute_recipe(manifest, inputs, context=None):
+            pass

@@ -240,7 +240,10 @@ class CouncilNodeHandler:
 
         strategy = CouncilStrategy(self.agent_executor)
 
-        result = await strategy.execute(prompt, council_config)
+        if context.user_context is None:
+            raise ValueError("UserContext is required for CouncilNodeHandler")
+
+        result = await strategy.execute(prompt, council_config, context=context.user_context)
 
         payload = CouncilVotePayload(
             node_id=node_id,

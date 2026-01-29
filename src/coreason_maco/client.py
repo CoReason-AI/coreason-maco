@@ -3,6 +3,7 @@ from typing import Any, AsyncGenerator, Dict, List, Optional, Type
 
 import httpx
 from anyio.from_thread import BlockingPortal, start_blocking_portal
+from coreason_identity.models import UserContext
 
 from coreason_maco.core.controller import WorkflowController
 from coreason_maco.core.interfaces import ServiceRegistry
@@ -51,6 +52,8 @@ class ServiceAsync:
         self,
         manifest: Dict[str, Any],
         inputs: Dict[str, Any],
+        *,
+        context: UserContext,
         resume_snapshot: Dict[str, Any] | None = None,
     ) -> AsyncGenerator[GraphEvent, None]:
         """Executes a recipe asynchronously.
@@ -58,12 +61,15 @@ class ServiceAsync:
         Args:
             manifest: The recipe manifest.
             inputs: The input parameters.
+            context: The user context.
             resume_snapshot: Optional snapshot to resume from.
 
         Yields:
             GraphEvent: Execution events.
         """
-        async for event in self._controller.execute_recipe(manifest, inputs, resume_snapshot):
+        async for event in self._controller.execute_recipe(
+            manifest, inputs, context=context, resume_snapshot=resume_snapshot
+        ):
             yield event
 
 
@@ -118,6 +124,8 @@ class Service:
         self,
         manifest: Dict[str, Any],
         inputs: Dict[str, Any],
+        *,
+        context: UserContext,
         resume_snapshot: Dict[str, Any] | None = None,
     ) -> List[GraphEvent]:
         """Executes a recipe synchronously and returns all events.
@@ -125,6 +133,7 @@ class Service:
         Args:
             manifest: The recipe manifest.
             inputs: The input parameters.
+            context: The user context.
             resume_snapshot: Optional snapshot to resume from.
 
         Returns:
@@ -138,7 +147,9 @@ class Service:
 
         async def _run() -> List[GraphEvent]:
             events = []
-            async for event in self._async.execute_recipe(manifest, inputs, resume_snapshot):
+            async for event in self._async.execute_recipe(
+                manifest, inputs, context=context, resume_snapshot=resume_snapshot
+            ):
                 events.append(event)
             return events
 
