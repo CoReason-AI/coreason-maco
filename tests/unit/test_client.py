@@ -8,7 +8,7 @@ from coreason_maco.client import Service, ServiceAsync
 from coreason_maco.events.protocol import GraphEvent
 
 
-@pytest.mark.asyncio  # type: ignore[misc]
+@pytest.mark.asyncio  # type: ignore[untyped-decorator]
 async def test_service_async_lifecycle_external_client() -> None:
     client_mock = AsyncMock()
 
@@ -19,7 +19,7 @@ async def test_service_async_lifecycle_external_client() -> None:
     client_mock.aclose.assert_not_called()
 
 
-@pytest.mark.asyncio  # type: ignore[misc]
+@pytest.mark.asyncio  # type: ignore[untyped-decorator]
 async def test_service_async_lifecycle_internal_client() -> None:
     with patch("httpx.AsyncClient") as mock_cls:
         mock_instance = AsyncMock()
@@ -31,7 +31,7 @@ async def test_service_async_lifecycle_internal_client() -> None:
         mock_instance.aclose.assert_awaited_once()
 
 
-@pytest.mark.asyncio  # type: ignore[misc]
+@pytest.mark.asyncio  # type: ignore[untyped-decorator]
 async def test_service_async_execute_recipe(mock_user_context: UserContext) -> None:
     service = ServiceAsync()
 
