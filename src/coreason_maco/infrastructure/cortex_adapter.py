@@ -8,29 +8,22 @@ class RemoteCortexAdapter(AgentRegistry):
         self.base_url = base_url.rstrip("/")
         self.client = httpx.AsyncClient(timeout=60.0)
 
-    async def execute_agent(self, agent_name: str, task: str, context: Any = None) -> str:
+    # ✅ FIX: Added 'llm_config' to the signature
+    async def execute_agent(self, agent_name: str, task: str, context: Any = None, llm_config: Dict[str, Any] = None) -> str:
         url = f"{self.base_url}/agent/execute"
         
-        # --- CRITICAL FIX: The "Wrapper" Strategy ---
-        # The Cortex Server strictly expects a Dictionary for 'context'.
-        # The Search Tool returns a List. Sending a List (or String) causes Error 422.
-        # SOLUTION: If context is not a dict, wrap it in one.
-        
+        # --- Wrapper Logic for Context ---
         safe_context = context
-        
-        # If it's None, send empty dict
         if context is None:
             safe_context = {}
-            
-        # If it's a List (Search Results) or String, wrap it!
         elif not isinstance(context, dict):
-            # We wrap the data so it passes the server's validation check
             safe_context = {"wrapped_content": context}
         
         payload = {
             "agent_name": agent_name,
             "task": task,
-            "context": safe_context 
+            "context": safe_context,
+            "llm_config": llm_config  # ✅ Pass the config to Cortex
         }
         
         try:
