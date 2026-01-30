@@ -3,3 +3,4 @@ theme:
   name: material
 nav:
   - Home: index.md
+  - Recipe Schema: recipe_manifest.md
