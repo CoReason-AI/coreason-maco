@@ -3,4 +3,5 @@ theme:
   name: material
 nav:
   - Home: index.md
+  - Recipe Schema: recipe_manifest.md
   - Core Concepts: core_concepts_maco_vs_agents.md
