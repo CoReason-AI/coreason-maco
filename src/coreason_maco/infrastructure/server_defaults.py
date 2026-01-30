@@ -1,5 +1,45 @@
 from typing import Any, AsyncGenerator, Dict, Optional
+# Import the interface we just created
+from coreason_maco.core.registry import ServerRegistry, AgentRegistry, ToolRegistry
 
+class ServerAuditLogger:
+    def log_event(self, event_type: str, details: Dict[str, Any]):
+        print(f"📝 [AUDIT] {event_type}: {details}")
+
+# Default Mock Agent Executor
+class ServerAgentExecutor(AgentRegistry):
+    async def execute_agent(self, agent_name: str, task: str, context: Dict[str, Any] = None) -> str:
+        return f"[Mock] Agent {agent_name} processed task: {task[:20]}..."
+
+# Default Mock Tool Executor
+class ServerToolExecutor(ToolRegistry):
+    async def execute(self, tool_name: str, arguments: Dict[str, Any], user_context: Any = None) -> Any:
+        # Mock result object
+        class MockResult:
+            content = [type("Content", (), {"text": f"[Mock] Executed {tool_name}"})]
+        return MockResult()
+
+# Concrete Implementation
+class DefaultServerRegistry(ServerRegistry):
+    def __init__(self):
+        self._tools = ServerToolExecutor()
+        self._agents = ServerAgentExecutor()
+        self._audit = ServerAuditLogger()
+
+    @property
+    def tool_registry(self):
+        return self._tools
+
+    @property
+    def agent_registry(self):
+        return self._agents
+
+    @property
+    def audit_logger(self):
+        return self._audit
+
+# For backward compatibility with existing server.py imports
+ServerRegistry = DefaultServerRegistry
 try:
     from coreason_identity.models import UserContext
 except ImportError:  # pragma: no cover
