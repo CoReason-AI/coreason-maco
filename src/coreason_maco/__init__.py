@@ -12,7 +12,7 @@
 A new Python project.
 """
 
-__version__ = "0.3.2"
+__version__ = "0.4.0"
 __author__ = "Gowtham A Rao"
 __email__ = "gowtham.rao@coreason.ai"
 
