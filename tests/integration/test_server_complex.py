@@ -8,16 +8,21 @@ client = TestClient(app)
 def test_complex_workflow_execution() -> None:
     """Test a workflow with multiple nodes and dependencies."""
     manifest = {
+        "id": "complex-workflow",
+        "version": "1.0.0",
         "name": "Complex Workflow",
-        "nodes": [
-            {"id": "A", "type": "LLM", "config": {"prompt": "Start"}},
-            {"id": "B", "type": "TOOL", "config": {"tool_name": "Calculator"}},
-            {"id": "C", "type": "LLM", "config": {"prompt": "Summarize {{ B }}"}},
-        ],
-        "edges": [
-            {"source": "A", "target": "B"},
-            {"source": "B", "target": "C"},
-        ],
+        "inputs": {},
+        "graph": {
+            "nodes": [
+                {"id": "A", "type": "agent", "agent_name": "Start"},
+                {"id": "B", "type": "logic", "code": "Calculator"},
+                {"id": "C", "type": "agent", "agent_name": "Summarize"},
+            ],
+            "edges": [
+                {"source_node_id": "A", "target_node_id": "B"},
+                {"source_node_id": "B", "target_node_id": "C"},
+            ],
+        },
     }
     inputs = {"trace_id": "t"}
     user_context = {

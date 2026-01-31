@@ -24,7 +24,16 @@ def test_hello_world() -> None:
 @pytest.mark.asyncio  # type: ignore
 async def test_run_workflow_cli() -> None:
     """Test the CLI adapter run_workflow function."""
-    manifest = {"name": "Test", "nodes": [], "edges": []}
+    manifest = {
+        "id": "cli-recipe",
+        "version": "1.0.0",
+        "name": "Test",
+        "inputs": {},
+        "graph": {
+            "nodes": [],
+            "edges": [],
+        },
+    }
     inputs = {"trace_id": "test_cli"}
 
     # Mock WorkflowController

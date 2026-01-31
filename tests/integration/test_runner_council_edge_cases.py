@@ -98,13 +98,26 @@ async def test_council_node_invalid_config(mock_user_context: UserContext) -> No
     services = MockServiceRegistry()
     controller = WorkflowController(services)
 
-    # Missing 'agents' and 'synthesizer'
+    # Missing 'voters'
     manifest = {
+        "id": "invalid-council-recipe",
+        "version": "1.0.0",
         "name": "Invalid Council",
-        "nodes": [
-            {"id": "bad_node", "type": "COUNCIL", "config": {"prompt": "Analyze"}},
-        ],
-        "edges": [],
+        "inputs": {},
+        "graph": {
+            "nodes": [
+                {
+                    "id": "bad_node",
+                    "type": "agent",
+                    "agent_name": "BadCouncil",
+                    "council_config": {
+                        "strategy": "consensus",
+                        # "voters": [...] Missing
+                    },
+                },
+            ],
+            "edges": [],
+        },
     }
     inputs = {"trace_id": "t"}
 
@@ -126,15 +139,21 @@ async def test_council_node_execution_failure(mock_user_context: UserContext) ->
     controller = WorkflowController(services)
 
     manifest = {
+        "id": "fail-council-recipe",
+        "version": "1.0.0",
         "name": "Failing Council",
-        "nodes": [
-            {
-                "id": "fail_node",
-                "type": "COUNCIL",
-                "config": {"agents": [{"model": "gpt-4"}], "synthesizer": {"model": "judge"}, "prompt": "Analyze"},
-            },
-        ],
-        "edges": [],
+        "inputs": {},
+        "graph": {
+            "nodes": [
+                {
+                    "id": "fail_node",
+                    "type": "agent",
+                    "agent_name": "FailCouncil",
+                    "council_config": {"strategy": "consensus", "voters": ["gpt-4"]},
+                },
+            ],
+            "edges": [],
+        },
     }
     inputs = {"trace_id": "t"}
 
@@ -156,24 +175,31 @@ async def test_parallel_council_nodes(mock_user_context: UserContext) -> None:
     controller = WorkflowController(services)
 
     manifest = {
+        "id": "parallel-council-recipe",
+        "version": "1.0.0",
         "name": "Parallel Councils",
-        "nodes": [
-            {"id": "Start", "type": "START", "config": {}},
-            {
-                "id": "Council_A",
-                "type": "COUNCIL",
-                "config": {"agents": [{"model": "gpt-4"}], "synthesizer": {"model": "judge"}, "prompt": "Q1"},
-            },
-            {
-                "id": "Council_B",
-                "type": "COUNCIL",
-                "config": {"agents": [{"model": "claude"}], "synthesizer": {"model": "judge"}, "prompt": "Q2"},
-            },
-        ],
-        "edges": [
-            {"source": "Start", "target": "Council_A"},
-            {"source": "Start", "target": "Council_B"},
-        ],
+        "inputs": {},
+        "graph": {
+            "nodes": [
+                {"id": "Start", "type": "agent", "agent_name": "StartAgent"},
+                {
+                    "id": "Council_A",
+                    "type": "agent",
+                    "agent_name": "CouncilA",
+                    "council_config": {"strategy": "consensus", "voters": ["gpt-4"]},
+                },
+                {
+                    "id": "Council_B",
+                    "type": "agent",
+                    "agent_name": "CouncilB",
+                    "council_config": {"strategy": "consensus", "voters": ["claude"]},
+                },
+            ],
+            "edges": [
+                {"source_node_id": "Start", "target_node_id": "Council_A"},
+                {"source_node_id": "Start", "target_node_id": "Council_B"},
+            ],
+        },
     }
     inputs = {"trace_id": "t"}
 
@@ -229,15 +255,21 @@ async def test_council_node_missing_executor(mock_user_context: UserContext) -> 
     controller = WorkflowController(services)
 
     manifest = {
+        "id": "missing-exec-recipe",
+        "version": "1.0.0",
         "name": "Missing Exec Council",
-        "nodes": [
-            {
-                "id": "node",
-                "type": "COUNCIL",
-                "config": {"agents": [{"model": "gpt-4"}], "synthesizer": {"model": "judge"}, "prompt": "Analyze"},
-            },
-        ],
-        "edges": [],
+        "inputs": {},
+        "graph": {
+            "nodes": [
+                {
+                    "id": "node",
+                    "type": "agent",
+                    "agent_name": "CouncilNode",
+                    "council_config": {"strategy": "consensus", "voters": ["gpt-4"]},
+                },
+            ],
+            "edges": [],
+        },
     }
     inputs = {"trace_id": "t"}
 

@@ -10,9 +10,11 @@ client = TestClient(app)
 def test_invalid_manifest_structure() -> None:
     """Test server response when manifest is invalid (missing 'nodes')."""
     manifest: Dict[str, Any] = {
+        "id": "invalid-recipe",
+        "version": "1.0.0",
         "name": "Invalid Manifest",
-        # "nodes": []  <-- Missing
-        "edges": [],
+        "inputs": {},
+        # "graph": ... Missing
     }
     inputs: Dict[str, Any] = {"trace_id": "t"}
     user_context = {
@@ -32,15 +34,21 @@ def test_invalid_manifest_structure() -> None:
     # we expect 500.
 
     assert response.status_code == 500
-    assert "Field required" in response.json()["detail"] or "nodes" in response.json()["detail"]
+    # "Field required" or "graph"
+    assert "Field required" in response.json()["detail"] or "graph" in response.json()["detail"]
 
 
 def test_missing_inputs() -> None:
     """Test server response when inputs are missing required fields."""
     manifest = {
+        "id": "valid-recipe",
+        "version": "1.0.0",
         "name": "Valid Manifest",
-        "nodes": [{"id": "A", "type": "LLM"}],
-        "edges": [],
+        "inputs": {},
+        "graph": {
+            "nodes": [{"id": "A", "type": "agent", "agent_name": "A"}],
+            "edges": [],
+        },
     }
     inputs: Dict[str, Any] = {
         # Missing trace_id
@@ -62,9 +70,14 @@ def test_missing_inputs() -> None:
 def test_empty_execution() -> None:
     """Test executing an empty workflow."""
     manifest = {
+        "id": "empty-recipe",
+        "version": "1.0.0",
         "name": "Empty Workflow",
-        "nodes": [],
-        "edges": [],
+        "inputs": {},
+        "graph": {
+            "nodes": [],
+            "edges": [],
+        },
     }
     inputs = {"trace_id": "t"}
     user_context = {

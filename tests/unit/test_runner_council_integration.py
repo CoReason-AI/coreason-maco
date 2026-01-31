@@ -51,9 +51,10 @@ async def test_runner_executes_council_node(mock_context: ExecutionContext, mock
     """
     graph = nx.DiGraph()
 
+    # Updated to match new CouncilConfig schema
     council_config = {
-        "agents": [{"model": "gpt-4"}, {"model": "claude-3"}],
-        "synthesizer": {"model": "gpt-4"},
+        "strategy": "consensus",
+        "voters": ["gpt-4", "claude-3"],
         "prompt": "Debate this.",
     }
 
@@ -85,8 +86,8 @@ async def test_runner_council_node_missing_context_in_handler(mock_agent_executo
     """Test that CouncilNodeHandler fails when UserContext is missing in ExecutionContext."""
     graph = nx.DiGraph()
     council_config = {
-        "agents": [{"model": "gpt-4"}],
-        "synthesizer": {"model": "gpt-4"},
+        "strategy": "consensus",
+        "voters": ["gpt-4"],
     }
     graph.add_node("CouncilNode", type="COUNCIL", config=council_config)
 

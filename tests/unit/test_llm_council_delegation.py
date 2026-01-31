@@ -1,0 +1,109 @@
+# Copyright (c) 2025 CoReason, Inc.
+#
+# This software is proprietary and dual-licensed.
+# Licensed under the Prosperity Public License 3.0 (the "License").
+# A copy of the license is available at https://prosperitylicense.com/versions/3.0.0
+# For details, see the LICENSE file.
+# Commercial use beyond a 30-day trial requires a separate license.
+#
+# Source Code: https://github.com/CoReason-AI/coreason_maco
+
+import asyncio
+from unittest.mock import AsyncMock, MagicMock
+
+import pytest
+from coreason_identity.models import UserContext
+
+from coreason_maco.core.manifest import CouncilConfig as ManifestCouncilConfig
+from coreason_maco.engine.handlers import LLMNodeHandler
+from coreason_maco.events.protocol import GraphEvent
+from coreason_maco.utils.context import ExecutionContext
+
+
+@pytest.mark.asyncio  # type: ignore
+async def test_llm_handler_delegates_to_council_with_dict(mock_user_context: UserContext) -> None:
+    # Setup
+    agent_executor = MagicMock()
+    # Mock invoke to return a Council result format or just something valid
+    # Since CouncilNodeHandler delegates to CouncilStrategy which calls invoke...
+    # We can just check if CouncilNodeHandler.execute is called, but we can't easily mock inner class.
+    # Instead we verify the outcome.
+
+    # We mock AgentExecutor.invoke to ensure it's called by CouncilStrategy
+    response = MagicMock()
+    response.content = "Consensus"
+    agent_executor.invoke = AsyncMock(return_value=response)
+
+    handler = LLMNodeHandler(agent_executor)
+
+    config = {"council_config": {"strategy": "consensus", "voters": ["A", "B"]}, "prompt": "Test"}
+
+    context = ExecutionContext(
+        user_id="u", trace_id="t", secrets_map={}, tool_registry=MagicMock(), user_context=mock_user_context
+    )
+
+    queue: asyncio.Queue[GraphEvent | None] = asyncio.Queue()
+
+    # Execute
+    result = await handler.execute("node1", "run1", config, context, queue, {})
+
+    # Verify
+    assert result == "Consensus"
+    # Verify AgentExecutor called for voters and synthesizer
+    assert agent_executor.invoke.call_count >= 1
+
+
+@pytest.mark.asyncio  # type: ignore
+async def test_llm_handler_delegates_to_council_with_pydantic_object(mock_user_context: UserContext) -> None:
+    # Setup
+    agent_executor = MagicMock()
+    response = MagicMock()
+    response.content = "Consensus"
+    agent_executor.invoke = AsyncMock(return_value=response)
+
+    handler = LLMNodeHandler(agent_executor)
+
+    # Pass CouncilConfig object directly
+    council_obj = ManifestCouncilConfig(strategy="consensus", voters=["A", "B"])
+
+    config = {"council_config": council_obj, "prompt": "Test"}
+
+    context = ExecutionContext(
+        user_id="u", trace_id="t", secrets_map={}, tool_registry=MagicMock(), user_context=mock_user_context
+    )
+
+    queue: asyncio.Queue[GraphEvent | None] = asyncio.Queue()
+
+    # Execute
+    result = await handler.execute("node1", "run1", config, context, queue, {})
+
+    # Verify
+    assert result == "Consensus"
+
+
+@pytest.mark.asyncio  # type: ignore
+async def test_llm_handler_delegates_to_council_with_iterable(mock_user_context: UserContext) -> None:
+    # Setup
+    agent_executor = MagicMock()
+    response = MagicMock()
+    response.content = "Consensus"
+    agent_executor.invoke = AsyncMock(return_value=response)
+
+    handler = LLMNodeHandler(agent_executor)
+
+    # Pass iterable of tuples (neither dict nor pydantic model, but convertible to dict)
+    council_iterable = [("strategy", "consensus"), ("voters", ["A", "B"])]
+
+    config = {"council_config": council_iterable, "prompt": "Test"}
+
+    context = ExecutionContext(
+        user_id="u", trace_id="t", secrets_map={}, tool_registry=MagicMock(), user_context=mock_user_context
+    )
+
+    queue: asyncio.Queue[GraphEvent | None] = asyncio.Queue()
+
+    # Execute
+    result = await handler.execute("node1", "run1", config, context, queue, {})
+
+    # Verify
+    assert result == "Consensus"

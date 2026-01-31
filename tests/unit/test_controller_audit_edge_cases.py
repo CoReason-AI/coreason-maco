@@ -71,7 +71,16 @@ async def test_input_sanitization_complex(mock_user_context: UserContext) -> Non
         "simple_param": "foo",  # Should be kept
     }
 
-    manifest = {"name": "Test", "nodes": [], "edges": []}
+    manifest = {
+        "id": "audit-edge-recipe",
+        "version": "1.0.0",
+        "name": "Test",
+        "inputs": {},
+        "graph": {
+            "nodes": [],
+            "edges": [],
+        },
+    }
 
     async for _ in controller.execute_recipe(manifest, inputs, context=mock_user_context):
         pass
@@ -117,7 +126,16 @@ async def test_audit_logging_on_workflow_failure(mock_user_context: UserContext)
     MockRunnerCls = MagicMock(return_value=mock_runner)
 
     controller = WorkflowController(services, runner_cls=MockRunnerCls)
-    manifest = {"name": "Crash Test", "nodes": [], "edges": []}
+    manifest = {
+        "id": "audit-crash-recipe",
+        "version": "1.0.0",
+        "name": "Crash Test",
+        "inputs": {},
+        "graph": {
+            "nodes": [],
+            "edges": [],
+        },
+    }
     inputs = {"trace_id": "t"}
 
     # We expect the exception to bubble up

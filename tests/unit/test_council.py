@@ -15,7 +15,8 @@ import pytest
 from coreason_identity.models import UserContext
 
 from coreason_maco.core.interfaces import AgentResponse
-from coreason_maco.strategies.council import CouncilConfig, CouncilStrategy
+from coreason_maco.core.manifest import CouncilConfig
+from coreason_maco.strategies.council import CouncilStrategy
 
 
 class MockResponse:
@@ -43,10 +44,8 @@ class MockAgentExecutor:
         # If it's a synthesis prompt (long), we can detect it
         if "Original Query:" in prompt:
             # Check if synthesis model is set to fail
-            # The strategy passes config.synthesizer to invoke
-            # In our tests, synthesizer config is {"model": "judge"}
-            if self.failure_on == "judge":
-                raise ValueError("Simulated failure for judge")
+            if self.failure_on == "synthesizer":
+                raise ValueError("Simulated failure for synthesizer")
             return MockResponse("Consensus Reached")
 
         return MockResponse(self.responses.get(model_name, "Default Response"))
@@ -60,7 +59,7 @@ class MockAgentExecutor:
 
 @pytest.mark.asyncio  # type: ignore
 async def test_council_success(mock_user_context: UserContext) -> None:
-    config = CouncilConfig(agents=[{"model": "gpt-4"}, {"model": "claude"}], synthesizer={"model": "judge"})
+    config = CouncilConfig(strategy="consensus", voters=["gpt-4", "claude"])
 
     mock_exec = MockAgentExecutor(responses={"gpt-4": "Blue", "claude": "Red"})
     strategy = CouncilStrategy(mock_exec)
@@ -74,7 +73,7 @@ async def test_council_success(mock_user_context: UserContext) -> None:
 
 @pytest.mark.asyncio  # type: ignore
 async def test_council_partial_failure(mock_user_context: UserContext) -> None:
-    config = CouncilConfig(agents=[{"model": "gpt-4"}, {"model": "claude"}], synthesizer={"model": "judge"})
+    config = CouncilConfig(strategy="consensus", voters=["gpt-4", "claude"])
 
     mock_exec = MockAgentExecutor(responses={"gpt-4": "Blue", "claude": "Red"}, failure_on="gpt-4")
     strategy = CouncilStrategy(mock_exec)
@@ -89,7 +88,7 @@ async def test_council_partial_failure(mock_user_context: UserContext) -> None:
 
 @pytest.mark.asyncio  # type: ignore
 async def test_council_all_fail(mock_user_context: UserContext) -> None:
-    config = CouncilConfig(agents=[{"model": "gpt-4"}], synthesizer={"model": "judge"})
+    config = CouncilConfig(strategy="consensus", voters=["gpt-4"])
 
     mock_exec = MockAgentExecutor(failure_on="gpt-4")
     strategy = CouncilStrategy(mock_exec)
@@ -100,10 +99,11 @@ async def test_council_all_fail(mock_user_context: UserContext) -> None:
 
 @pytest.mark.asyncio  # type: ignore
 async def test_council_timeout(mock_user_context: UserContext) -> None:
-    config = CouncilConfig(agents=[{"model": "slow-poke"}], synthesizer={"model": "judge"}, timeout_seconds=0.01)
+    # Set timeout via Strategy constructor
+    config = CouncilConfig(strategy="consensus", voters=["slow-poke"])
 
     mock_exec = MockAgentExecutor(responses={"slow-poke": "Slow"}, delay=0.1)
-    strategy = CouncilStrategy(mock_exec)
+    strategy = CouncilStrategy(mock_exec, timeout=0.01)
 
     with pytest.raises(RuntimeError, match="All council agents failed"):
         await strategy.execute("Fast?", config, context=mock_user_context)
@@ -111,9 +111,9 @@ async def test_council_timeout(mock_user_context: UserContext) -> None:
 
 @pytest.mark.asyncio  # type: ignore
 async def test_council_synthesizer_fail(mock_user_context: UserContext) -> None:
-    config = CouncilConfig(agents=[{"model": "gpt-4"}], synthesizer={"model": "judge"})
+    config = CouncilConfig(strategy="consensus", voters=["gpt-4"])
 
-    mock_exec = MockAgentExecutor(responses={"gpt-4": "Blue"}, failure_on="judge")
+    mock_exec = MockAgentExecutor(responses={"gpt-4": "Blue"}, failure_on="synthesizer")
     strategy = CouncilStrategy(mock_exec)
 
     with pytest.raises(RuntimeError, match="Synthesizer agent failed"):
@@ -122,7 +122,7 @@ async def test_council_synthesizer_fail(mock_user_context: UserContext) -> None:
 
 @pytest.mark.asyncio  # type: ignore
 async def test_council_missing_context() -> None:
-    config = CouncilConfig(agents=[{"model": "gpt-4"}], synthesizer={"model": "judge"})
+    config = CouncilConfig(strategy="consensus", voters=["gpt-4"])
     mock_exec = MockAgentExecutor()
     strategy = CouncilStrategy(mock_exec)
 

@@ -2,7 +2,7 @@
 
 The Coreason MACO engine relies on a strict Pydantic v2 data model called the **RecipeManifest**. This specification defines the structure, behavior, and visual representation of a "Recipe" — a deterministic Directed Acyclic Graph (DAG) that orchestrates strategic workflows.
 
-The schema is defined in `src/coreason_maco/core/manifest_schema.py`.
+The schema is now imported from the external shared library `coreason-manifest` and re-exported in `src/coreason_maco/core/manifest.py`. The local file `src/coreason_maco/core/manifest_schema.py` has been deprecated.
 
 ## Overview
 
@@ -55,7 +55,7 @@ Pauses execution for user input or approval.
 #### 3. LogicNode (`type="logic"`)
 Executes pure Python logic for routing, formatting, or data transformation.
 
--   **`code`** (`str`): The Python logic to execute.
+-   **`code`** (`str`): The Python logic to execute (also used as tool name fallback in runtime).
 
 ---
 
@@ -77,7 +77,7 @@ Edges define the flow of execution between nodes.
 Configuration for **Architectural Triangulation**, allowing multiple models/agents to vote or reach consensus.
 
 -   **`strategy`** (`str`): The voting strategy (default: `"consensus"`).
--   **`voters`** (`List[str]`): List of agent IDs or model names participating in the council.
+-   **`voters`** (`List[str]`): List of agent IDs or model names participating in the council (Replaces legacy `agents` dict list).
 
 ### VisualMetadata
 Data explicitly for the "Living Canvas" UI.
