@@ -176,7 +176,10 @@ class LLMNodeHandler:
                 else:
                     inner_config = dict(inner_config)
 
-            return await council_handler.execute(node_id, run_id, inner_config, context, queue, node_attributes)
+            result = await council_handler.execute(
+                node_id, run_id, inner_config, context, queue, node_attributes
+            )
+            return result
 
         # Assuming 'prompt' or 'input' is in config, fallback to args
         prompt = config.get("prompt", config.get("args", {}).get("prompt", "Analyze this."))
