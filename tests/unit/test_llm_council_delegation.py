@@ -69,3 +69,31 @@ async def test_llm_handler_delegates_to_council_with_pydantic_object(mock_user_c
 
     # Verify
     assert result == "Consensus"
+
+
+@pytest.mark.asyncio  # type: ignore
+async def test_llm_handler_delegates_to_council_with_iterable(mock_user_context: UserContext) -> None:
+    # Setup
+    agent_executor = MagicMock()
+    response = MagicMock()
+    response.content = "Consensus"
+    agent_executor.invoke = AsyncMock(return_value=response)
+
+    handler = LLMNodeHandler(agent_executor)
+
+    # Pass iterable of tuples (neither dict nor pydantic model, but convertible to dict)
+    council_iterable = [("strategy", "consensus"), ("voters", ["A", "B"])]
+
+    config = {"council_config": council_iterable, "prompt": "Test"}
+
+    context = ExecutionContext(
+        user_id="u", trace_id="t", secrets_map={}, tool_registry=MagicMock(), user_context=mock_user_context
+    )
+
+    queue: asyncio.Queue[GraphEvent | None] = asyncio.Queue()
+
+    # Execute
+    result = await handler.execute("node1", "run1", config, context, queue, {})
+
+    # Verify
+    assert result == "Consensus"
