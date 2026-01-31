@@ -39,10 +39,7 @@ async def test_audit_logging_integration(mock_user_context: UserContext) -> None
         "version": "1.0.0",
         "name": "Test Workflow",
         "inputs": {},
-        "graph": {
-            "nodes": [{"id": "node1", "type": "logic", "code": "pass"}],
-            "edges": []
-        }
+        "graph": {"nodes": [{"id": "node1", "type": "logic", "code": "pass"}], "edges": []},
     }
     inputs = {"trace_id": "trace456"}
 

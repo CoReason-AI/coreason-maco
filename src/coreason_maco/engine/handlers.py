@@ -14,13 +14,14 @@ import time
 from typing import Any, Dict, Protocol
 
 from coreason_maco.core.interfaces import AgentExecutor, ToolExecutor
+from coreason_maco.core.manifest import CouncilConfig
 from coreason_maco.events.protocol import (
     ArtifactGenerated,
     CouncilVotePayload,
     GraphEvent,
     NodeStream,
 )
-from coreason_maco.strategies.council import CouncilConfig, CouncilStrategy
+from coreason_maco.strategies.council import CouncilStrategy
 from coreason_maco.utils.context import ExecutionContext
 
 
@@ -169,15 +170,13 @@ class LLMNodeHandler:
                 # Ensure we pass a dict
                 pass
             else:
-                 # If it's a model (CouncilConfig object), dump it
+                # If it's a model (CouncilConfig object), dump it
                 if hasattr(inner_config, "model_dump"):
-                     inner_config = inner_config.model_dump()
+                    inner_config = inner_config.model_dump()
                 else:
-                     inner_config = dict(inner_config)
+                    inner_config = dict(inner_config)
 
-            return await council_handler.execute(
-                node_id, run_id, inner_config, context, queue, node_attributes
-            )
+            return await council_handler.execute(node_id, run_id, inner_config, context, queue, node_attributes)
 
         # Assuming 'prompt' or 'input' is in config, fallback to args
         prompt = config.get("prompt", config.get("args", {}).get("prompt", "Analyze this."))

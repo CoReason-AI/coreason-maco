@@ -9,7 +9,7 @@
 # Source Code: https://github.com/CoReason-AI/coreason_maco
 
 import asyncio
-from typing import Any, Dict, List
+from typing import Dict, List
 
 from coreason_identity.models import UserContext
 from pydantic import BaseModel, ConfigDict
@@ -68,7 +68,7 @@ class CouncilStrategy:
         tasks = []
 
         for voter_name in config.voters:
-             # Construct agent config from name
+            # Construct agent config from name
             agent_config = {"model": voter_name, "agent_name": voter_name}
             tasks.append(asyncio.wait_for(self.executor.invoke(prompt, agent_config), timeout=self.timeout))
 

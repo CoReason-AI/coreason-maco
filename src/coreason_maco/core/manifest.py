@@ -4,15 +4,15 @@
 # and provide a clean namespace for the engine.
 
 from coreason_manifest.recipes import (
-    RecipeManifest,
-    GraphTopology,
-    Node,
     AgentNode,
+    CouncilConfig,
+    Edge,
+    GraphTopology,
     HumanNode,
     LogicNode,
-    Edge,
-    CouncilConfig,
-    VisualMetadata
+    Node,
+    RecipeManifest,
+    VisualMetadata,
 )
 
 __all__ = [
@@ -24,5 +24,5 @@ __all__ = [
     "LogicNode",
     "Edge",
     "CouncilConfig",
-    "VisualMetadata"
+    "VisualMetadata",
 ]

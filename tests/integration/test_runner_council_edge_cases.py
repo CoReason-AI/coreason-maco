@@ -113,11 +113,11 @@ async def test_council_node_invalid_config(mock_user_context: UserContext) -> No
                     "council_config": {
                         "strategy": "consensus",
                         # "voters": [...] Missing
-                    }
+                    },
                 },
             ],
             "edges": [],
-        }
+        },
     }
     inputs = {"trace_id": "t"}
 
@@ -149,14 +149,11 @@ async def test_council_node_execution_failure(mock_user_context: UserContext) ->
                     "id": "fail_node",
                     "type": "agent",
                     "agent_name": "FailCouncil",
-                    "council_config": {
-                        "strategy": "consensus",
-                        "voters": ["gpt-4"]
-                    }
+                    "council_config": {"strategy": "consensus", "voters": ["gpt-4"]},
                 },
             ],
             "edges": [],
-        }
+        },
     }
     inputs = {"trace_id": "t"}
 
@@ -189,20 +186,20 @@ async def test_parallel_council_nodes(mock_user_context: UserContext) -> None:
                     "id": "Council_A",
                     "type": "agent",
                     "agent_name": "CouncilA",
-                    "council_config": {"strategy": "consensus", "voters": ["gpt-4"]}
+                    "council_config": {"strategy": "consensus", "voters": ["gpt-4"]},
                 },
                 {
                     "id": "Council_B",
                     "type": "agent",
                     "agent_name": "CouncilB",
-                    "council_config": {"strategy": "consensus", "voters": ["claude"]}
+                    "council_config": {"strategy": "consensus", "voters": ["claude"]},
                 },
             ],
             "edges": [
                 {"source_node_id": "Start", "target_node_id": "Council_A"},
                 {"source_node_id": "Start", "target_node_id": "Council_B"},
             ],
-        }
+        },
     }
     inputs = {"trace_id": "t"}
 
@@ -268,11 +265,11 @@ async def test_council_node_missing_executor(mock_user_context: UserContext) -> 
                     "id": "node",
                     "type": "agent",
                     "agent_name": "CouncilNode",
-                    "council_config": {"strategy": "consensus", "voters": ["gpt-4"]}
+                    "council_config": {"strategy": "consensus", "voters": ["gpt-4"]},
                 },
             ],
             "edges": [],
-        }
+        },
     }
     inputs = {"trace_id": "t"}
 

@@ -48,7 +48,7 @@ def test_missing_inputs() -> None:
         "graph": {
             "nodes": [{"id": "A", "type": "agent", "agent_name": "A"}],
             "edges": [],
-        }
+        },
     }
     inputs: Dict[str, Any] = {
         # Missing trace_id
@@ -77,7 +77,7 @@ def test_empty_execution() -> None:
         "graph": {
             "nodes": [],
             "edges": [],
-        }
+        },
     }
     inputs = {"trace_id": "t"}
     user_context = {

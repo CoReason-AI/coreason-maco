@@ -103,14 +103,11 @@ async def test_runner_executes_council_node(mock_user_context: UserContext) -> N
                     "id": "council_node",
                     "type": "agent",
                     "agent_name": "CouncilAgent",
-                    "council_config": {
-                        "strategy": "consensus",
-                        "voters": ["gpt-4", "claude"]
-                    }
+                    "council_config": {"strategy": "consensus", "voters": ["gpt-4", "claude"]},
                 },
             ],
             "edges": [],
-        }
+        },
     }
 
     inputs = {"trace_id": "t"}

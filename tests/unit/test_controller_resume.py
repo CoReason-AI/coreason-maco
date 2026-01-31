@@ -78,7 +78,7 @@ async def test_controller_passes_resume_snapshot(mock_user_context: UserContext)
         "graph": {
             "nodes": [{"id": "A", "type": "agent", "agent_name": "A"}],
             "edges": [],
-        }
+        },
     }
 
     inputs = {

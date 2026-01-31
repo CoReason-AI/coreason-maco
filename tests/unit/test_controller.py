@@ -94,7 +94,7 @@ async def test_controller_execution_flow(mock_user_context: UserContext) -> None
                 {"id": "A", "type": "agent", "agent_name": "AgentA"},
             ],
             "edges": [],
-        }
+        },
     }
 
     inputs = {"user_id": "user123", "trace_id": "trace123", "secrets_map": {}}
@@ -128,7 +128,7 @@ async def test_controller_missing_inputs(mock_user_context: UserContext) -> None
         "graph": {
             "nodes": [],
             "edges": [],
-        }
+        },
     }
 
     # Missing trace_id
@@ -172,7 +172,7 @@ async def test_controller_topology_error(mock_user_context: UserContext) -> None
         "graph": {
             "nodes": [{"id": "A", "type": "agent", "agent_name": "A"}],
             "edges": [{"source_node_id": "A", "target_node_id": "A"}],
-        }
+        },
     }
     inputs = {"user_id": "u", "trace_id": "t"}
 
@@ -197,7 +197,7 @@ async def test_controller_runtime_error(mock_user_context: UserContext) -> None:
         "graph": {
             "nodes": [{"id": "A", "type": "agent", "agent_name": "A"}],
             "edges": [],
-        }
+        },
     }
     inputs = {"user_id": "u", "trace_id": "t"}
 
@@ -229,7 +229,7 @@ async def test_controller_empty_graph(mock_user_context: UserContext) -> None:
         "graph": {
             "nodes": [],
             "edges": [],
-        }
+        },
     }
     inputs = {"user_id": "u", "trace_id": "t"}
 
@@ -267,7 +267,7 @@ async def test_controller_context_construction() -> None:
         "graph": {
             "nodes": [{"id": "A", "type": "agent", "agent_name": "A"}],
             "edges": [],
-        }
+        },
     }
     inputs = {
         "user_id": "specific_user",
@@ -332,7 +332,7 @@ async def test_controller_no_audit_logger(mock_user_context: UserContext) -> Non
         "graph": {
             "nodes": [],
             "edges": [],
-        }
+        },
     }
     inputs = {"user_id": "u", "trace_id": "t"}
 
@@ -367,7 +367,7 @@ async def test_controller_feedback_injection(mock_user_context: UserContext) -> 
         "graph": {
             "nodes": [],
             "edges": [],
-        }
+        },
     }
 
     # Mock FeedbackManager
@@ -416,7 +416,7 @@ async def test_controller_context_var_propagation(mock_user_context: UserContext
         "graph": {
             "nodes": [],
             "edges": [],
-        }
+        },
     }
     inputs = {"user_id": "u", "trace_id": "trace-123"}
 

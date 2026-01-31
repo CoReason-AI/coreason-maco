@@ -85,7 +85,7 @@ async def test_propagation_sequential_workflow(mock_user_context: UserContext) -
                 {"id": "B", "type": "logic", "code": "ToolB"},
             ],
             "edges": [{"source_node_id": "A", "target_node_id": "B"}],
-        }
+        },
     }
     inputs = {"trace_id": "t"}
 
@@ -119,7 +119,7 @@ async def test_propagation_parallel_branching(mock_user_context: UserContext) ->
                 {"source_node_id": "Start", "target_node_id": "Branch1"},
                 {"source_node_id": "Start", "target_node_id": "Branch2"},
             ],
-        }
+        },
     }
     inputs = {"trace_id": "t"}
 
@@ -147,11 +147,11 @@ async def test_propagation_missing_context() -> None:
         "graph": {
             "nodes": [{"id": "A", "type": "logic", "code": "ToolA"}],
             "edges": [],
-        }
+        },
     }
     inputs = {"trace_id": "t"}
 
     # Pass None explicitly (default) - Should raise TypeError/ValueError
     with pytest.raises((TypeError, ValueError)):
-        async for _ in controller.execute_recipe(manifest, inputs, context=None):  # type: ignore
+        async for _ in controller.execute_recipe(manifest, inputs, context=None):
             pass

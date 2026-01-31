@@ -28,10 +28,10 @@ def test_build_simple_linear_graph(topology_engine: TopologyEngine) -> None:
         graph=GraphTopology(
             nodes=[
                 AgentNode(id="A", type="agent", agent_name="AgentA"),
-                AgentNode(id="B", type="agent", agent_name="AgentB")
+                AgentNode(id="B", type="agent", agent_name="AgentB"),
             ],
             edges=[Edge(source_node_id="A", target_node_id="B")],
-        )
+        ),
     )
 
     graph = topology_engine.build_graph(manifest)
@@ -62,7 +62,7 @@ def test_build_branching_graph(topology_engine: TopologyEngine) -> None:
                 Edge(source_node_id="B", target_node_id="D"),
                 Edge(source_node_id="C", target_node_id="D"),
             ],
-        )
+        ),
     )
 
     graph = topology_engine.build_graph(manifest)
@@ -83,13 +83,13 @@ def test_build_conditional_graph(topology_engine: TopologyEngine) -> None:
             nodes=[
                 AgentNode(id="A", type="agent", agent_name="Start"),
                 AgentNode(id="B", type="agent", agent_name="PathB"),
-                AgentNode(id="C", type="agent", agent_name="PathC")
+                AgentNode(id="C", type="agent", agent_name="PathC"),
             ],
             edges=[
                 Edge(source_node_id="A", target_node_id="B", condition="yes"),
-                Edge(source_node_id="A", target_node_id="C", condition="no")
+                Edge(source_node_id="A", target_node_id="C", condition="no"),
             ],
-        )
+        ),
     )
 
     graph = topology_engine.build_graph(manifest)
@@ -110,10 +110,10 @@ def test_build_disconnected_graph_raises_error(topology_engine: TopologyEngine) 
         graph=GraphTopology(
             nodes=[
                 AgentNode(id="A", type="agent", agent_name="Start"),
-                AgentNode(id="B", type="agent", agent_name="Island")
+                AgentNode(id="B", type="agent", agent_name="Island"),
             ],
-            edges=[]
-        )
+            edges=[],
+        ),
     )
 
     with pytest.raises(GraphIntegrityError):
@@ -129,13 +129,10 @@ def test_build_cyclic_graph_raises_error(topology_engine: TopologyEngine) -> Non
         graph=GraphTopology(
             nodes=[
                 AgentNode(id="A", type="agent", agent_name="NodeA"),
-                AgentNode(id="B", type="agent", agent_name="NodeB")
+                AgentNode(id="B", type="agent", agent_name="NodeB"),
             ],
-            edges=[
-                Edge(source_node_id="A", target_node_id="B"),
-                Edge(source_node_id="B", target_node_id="A")
-            ],
-        )
+            edges=[Edge(source_node_id="A", target_node_id="B"), Edge(source_node_id="B", target_node_id="A")],
+        ),
     )
 
     with pytest.raises(CyclicDependencyError):
@@ -149,10 +146,7 @@ def test_node_config_preserved(topology_engine: TopologyEngine) -> None:
         version="1.0.0",
         name="Config",
         inputs={},
-        graph=GraphTopology(
-            nodes=[AgentNode(id="A", type="agent", agent_name="gpt-4")],
-            edges=[]
-        )
+        graph=GraphTopology(nodes=[AgentNode(id="A", type="agent", agent_name="gpt-4")], edges=[]),
     )
 
     graph = topology_engine.build_graph(manifest)

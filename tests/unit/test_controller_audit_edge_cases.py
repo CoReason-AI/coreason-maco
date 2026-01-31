@@ -79,7 +79,7 @@ async def test_input_sanitization_complex(mock_user_context: UserContext) -> Non
         "graph": {
             "nodes": [],
             "edges": [],
-        }
+        },
     }
 
     async for _ in controller.execute_recipe(manifest, inputs, context=mock_user_context):
@@ -134,7 +134,7 @@ async def test_audit_logging_on_workflow_failure(mock_user_context: UserContext)
         "graph": {
             "nodes": [],
             "edges": [],
-        }
+        },
     }
     inputs = {"trace_id": "t"}
 

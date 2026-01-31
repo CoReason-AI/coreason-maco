@@ -22,7 +22,7 @@ def test_complex_workflow_execution() -> None:
                 {"source_node_id": "A", "target_node_id": "B"},
                 {"source_node_id": "B", "target_node_id": "C"},
             ],
-        }
+        },
     }
     inputs = {"trace_id": "t"}
     user_context = {

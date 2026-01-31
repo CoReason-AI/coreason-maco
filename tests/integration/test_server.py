@@ -20,7 +20,7 @@ def test_execute_workflow() -> None:
         "graph": {
             "nodes": [{"id": "A", "type": "agent", "agent_name": "TestAgent"}],
             "edges": [],
-        }
+        },
     }
     inputs = {"trace_id": "test_trace"}
     user_context = {

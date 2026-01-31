@@ -32,7 +32,7 @@ async def test_run_workflow_cli() -> None:
         "graph": {
             "nodes": [],
             "edges": [],
-        }
+        },
     }
     inputs = {"trace_id": "test_cli"}
 
