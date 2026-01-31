@@ -85,11 +85,16 @@ async def test_controller_execution_flow(mock_user_context: UserContext) -> None
     controller = WorkflowController(services, topology=mock_topology, runner_cls=MockRunnerCls)
 
     manifest = {
+        "id": "test-recipe",
+        "version": "1.0.0",
+        "inputs": {},
         "name": "Test Recipe",
-        "nodes": [
-            {"id": "A", "type": "LLM", "config": {"mock_output": "Output A"}},
-        ],
-        "edges": [],
+        "graph": {
+            "nodes": [
+                {"id": "A", "type": "agent", "agent_name": "AgentA"},
+            ],
+            "edges": [],
+        }
     }
 
     inputs = {"user_id": "user123", "trace_id": "trace123", "secrets_map": {}}
@@ -116,9 +121,14 @@ async def test_controller_missing_inputs(mock_user_context: UserContext) -> None
     controller = WorkflowController(services)
 
     manifest: dict[str, Any] = {
+        "id": "test-recipe",
+        "version": "1.0.0",
+        "inputs": {},
         "name": "Test Recipe",
-        "nodes": [],
-        "edges": [],
+        "graph": {
+            "nodes": [],
+            "edges": [],
+        }
     }
 
     # Missing trace_id
@@ -134,7 +144,7 @@ async def test_controller_invalid_manifest(mock_user_context: UserContext) -> No
     services = MockServiceRegistry()
     controller = WorkflowController(services)
 
-    # Missing 'nodes'
+    # Missing 'graph' (was 'nodes')
     manifest: dict[str, Any] = {
         "name": "Test Recipe",
         "edges": [],
@@ -155,9 +165,14 @@ async def test_controller_topology_error(mock_user_context: UserContext) -> None
     controller = WorkflowController(services, topology=mock_topology)
 
     manifest = {
+        "id": "cyclic-recipe",
+        "version": "1.0.0",
+        "inputs": {},
         "name": "Cyclic Recipe",
-        "nodes": [{"id": "A", "type": "LLM"}],
-        "edges": [{"source": "A", "target": "A"}],
+        "graph": {
+            "nodes": [{"id": "A", "type": "agent", "agent_name": "A"}],
+            "edges": [{"source_node_id": "A", "target_node_id": "A"}],
+        }
     }
     inputs = {"user_id": "u", "trace_id": "t"}
 
@@ -175,9 +190,14 @@ async def test_controller_runtime_error(mock_user_context: UserContext) -> None:
     controller = WorkflowController(services, runner_cls=MockRunnerCls)
 
     manifest = {
+        "id": "broken-recipe",
+        "version": "1.0.0",
+        "inputs": {},
         "name": "Broken Recipe",
-        "nodes": [{"id": "A", "type": "LLM"}],
-        "edges": [],
+        "graph": {
+            "nodes": [{"id": "A", "type": "agent", "agent_name": "A"}],
+            "edges": [],
+        }
     }
     inputs = {"user_id": "u", "trace_id": "t"}
 
@@ -202,9 +222,14 @@ async def test_controller_empty_graph(mock_user_context: UserContext) -> None:
     controller = WorkflowController(services, topology=mock_topology, runner_cls=MockRunnerCls)
 
     manifest = {
+        "id": "empty-recipe",
+        "version": "1.0.0",
+        "inputs": {},
         "name": "Empty Recipe",
-        "nodes": [],
-        "edges": [],
+        "graph": {
+            "nodes": [],
+            "edges": [],
+        }
     }
     inputs = {"user_id": "u", "trace_id": "t"}
 
@@ -235,9 +260,14 @@ async def test_controller_context_construction() -> None:
     controller = WorkflowController(services, runner_cls=MockRunnerCls)
 
     manifest = {
+        "id": "context-recipe",
+        "version": "1.0.0",
+        "inputs": {},
         "name": "Context Test",
-        "nodes": [{"id": "A", "type": "LLM"}],
-        "edges": [],
+        "graph": {
+            "nodes": [{"id": "A", "type": "agent", "agent_name": "A"}],
+            "edges": [],
+        }
     }
     inputs = {
         "user_id": "specific_user",
@@ -294,7 +324,16 @@ async def test_controller_no_audit_logger(mock_user_context: UserContext) -> Non
 
     controller = WorkflowController(services, runner_cls=MockRunnerCls)
 
-    manifest = {"name": "No Audit", "nodes": [], "edges": []}
+    manifest = {
+        "id": "no-audit-recipe",
+        "version": "1.0.0",
+        "inputs": {},
+        "name": "No Audit",
+        "graph": {
+            "nodes": [],
+            "edges": [],
+        }
+    }
     inputs = {"user_id": "u", "trace_id": "t"}
 
     async for _ in controller.execute_recipe(manifest, inputs, context=mock_user_context):
@@ -320,7 +359,16 @@ async def test_controller_feedback_injection(mock_user_context: UserContext) -> 
 
     controller = WorkflowController(services, runner_cls=MockRunnerCls)
 
-    manifest = {"name": "Feedback Test", "nodes": [], "edges": []}
+    manifest = {
+        "id": "feedback-recipe",
+        "version": "1.0.0",
+        "inputs": {},
+        "name": "Feedback Test",
+        "graph": {
+            "nodes": [],
+            "edges": [],
+        }
+    }
 
     # Mock FeedbackManager
     feedback_manager = FeedbackManager()
@@ -360,7 +408,16 @@ async def test_controller_context_var_propagation(mock_user_context: UserContext
 
     controller = WorkflowController(services, runner_cls=MockRunnerCls)
 
-    manifest = {"name": "Ctx Test", "nodes": [], "edges": []}
+    manifest = {
+        "id": "ctx-recipe",
+        "version": "1.0.0",
+        "inputs": {},
+        "name": "Ctx Test",
+        "graph": {
+            "nodes": [],
+            "edges": [],
+        }
+    }
     inputs = {"user_id": "u", "trace_id": "trace-123"}
 
     async for _ in controller.execute_recipe(manifest, inputs, context=mock_user_context):

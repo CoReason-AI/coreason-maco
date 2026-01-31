@@ -71,9 +71,14 @@ async def test_controller_passes_resume_snapshot(mock_user_context: UserContext)
     controller = WorkflowController(services, topology=mock_topology, runner_cls=MockRunnerCls)
 
     manifest = {
+        "id": "resume-recipe",
+        "version": "1.0.0",
         "name": "Resume Test",
-        "nodes": [{"id": "A", "type": "LLM"}],
-        "edges": [],
+        "inputs": {},
+        "graph": {
+            "nodes": [{"id": "A", "type": "agent", "agent_name": "A"}],
+            "edges": [],
+        }
     }
 
     inputs = {

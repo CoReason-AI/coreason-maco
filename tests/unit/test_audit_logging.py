@@ -14,11 +14,13 @@ async def test_audit_logging_integration(mock_user_context: UserContext) -> None
 
     mock_services = MagicMock(spec=ServiceRegistry)
     # Important: Property mock needs to return the AsyncMock
-    # Since ServiceRegistry defines audit_logger as a property, we mock it as an attribute on the instance
-    # or use PropertyMock if we were mocking the class.
-    # Here mock_services is an instance of MagicMock, so we just set the attribute.
     mock_services.audit_logger = mock_audit_logger
-    mock_services.tool_registry = MagicMock(spec=ToolExecutor)
+
+    # Configure Tool Registry Mock
+    mock_tool_registry = MagicMock(spec=ToolExecutor)
+    # Configure execute to return a simple string (not a MagicMock that has 'artifact_type')
+    mock_tool_registry.execute = AsyncMock(return_value="Tool Result")
+    mock_services.tool_registry = mock_tool_registry
 
     mock_agent_executor = MagicMock(spec=AgentExecutor)
     # Mock invoke to return something valid
@@ -32,7 +34,16 @@ async def test_audit_logging_integration(mock_user_context: UserContext) -> None
     # Workflow setup
     controller = WorkflowController(services=mock_services)
 
-    manifest = {"name": "Test Workflow", "nodes": [{"id": "node1", "type": "DEFAULT"}], "edges": []}
+    manifest = {
+        "id": "audit-test",
+        "version": "1.0.0",
+        "name": "Test Workflow",
+        "inputs": {},
+        "graph": {
+            "nodes": [{"id": "node1", "type": "logic", "code": "pass"}],
+            "edges": []
+        }
+    }
     inputs = {"trace_id": "trace456"}
 
     # Run

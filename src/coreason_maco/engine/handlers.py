@@ -78,6 +78,10 @@ class ToolNodeHandler:
             Any: The result of the tool execution.
         """
         tool_name = config.get("tool_name")
+        # Fallback to 'code' as tool name for LogicNode compatibility
+        if not tool_name:
+            tool_name = config.get("code")
+
         tool_args = config.get("args", {})
 
         if tool_name:
@@ -154,6 +158,27 @@ class LLMNodeHandler:
             ValueError: If agent_executor is not provided.
         """
         model_config = config.copy()
+
+        # Check for Council Config
+        if "council_config" in model_config and model_config["council_config"]:
+            # Delegate to CouncilNodeHandler
+            # We pass the inner council_config as the configuration
+            council_handler = CouncilNodeHandler(self.agent_executor)
+            inner_config = model_config["council_config"]
+            if isinstance(inner_config, dict):
+                # Ensure we pass a dict
+                pass
+            else:
+                 # If it's a model (CouncilConfig object), dump it
+                if hasattr(inner_config, "model_dump"):
+                     inner_config = inner_config.model_dump()
+                else:
+                     inner_config = dict(inner_config)
+
+            return await council_handler.execute(
+                node_id, run_id, inner_config, context, queue, node_attributes
+            )
+
         # Assuming 'prompt' or 'input' is in config, fallback to args
         prompt = config.get("prompt", config.get("args", {}).get("prompt", "Analyze this."))
 

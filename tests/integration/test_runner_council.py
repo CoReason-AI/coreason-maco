@@ -93,19 +93,24 @@ async def test_runner_executes_council_node(mock_user_context: UserContext) -> N
 
     # 3. Define Manifest
     manifest = {
+        "id": "council-recipe",
+        "version": "1.0.0",
         "name": "Council Workflow",
-        "nodes": [
-            {
-                "id": "council_node",
-                "type": "COUNCIL",
-                "config": {
-                    "agents": [{"model": "gpt-4"}, {"model": "claude"}],
-                    "synthesizer": {"model": "judge"},
-                    "prompt": "What is the best color?",
+        "inputs": {},
+        "graph": {
+            "nodes": [
+                {
+                    "id": "council_node",
+                    "type": "agent",
+                    "agent_name": "CouncilAgent",
+                    "council_config": {
+                        "strategy": "consensus",
+                        "voters": ["gpt-4", "claude"]
+                    }
                 },
-            },
-        ],
-        "edges": [],
+            ],
+            "edges": [],
+        }
     }
 
     inputs = {"trace_id": "t"}

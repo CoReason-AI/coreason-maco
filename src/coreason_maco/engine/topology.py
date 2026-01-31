@@ -43,16 +43,20 @@ class TopologyEngine:
         """
         graph = nx.DiGraph(name=manifest.name)
 
-        for node in manifest.nodes:
+        # Access nodes and edges from the nested graph topology
+        for node in manifest.graph.nodes:
             # Store node attributes
             # id is used as the node key
-            graph.add_node(node.id, type=node.type, config=node.config)
+            # We dump the node model to a dict, excluding 'id' and 'type' to form the 'config'
+            # This adapts the new schema (where config is flattened into the node) to the runtime expectation
+            config = node.model_dump(exclude={"id", "type"})
+            graph.add_node(node.id, type=node.type, config=config)
 
-        for edge in manifest.edges:
+        for edge in manifest.graph.edges:
             edge_attrs = {}
             if edge.condition:
                 edge_attrs["condition"] = edge.condition
-            graph.add_edge(edge.source, edge.target, **edge_attrs)
+            graph.add_edge(edge.source_node_id, edge.target_node_id, **edge_attrs)
 
         self.validate_graph(graph)
 

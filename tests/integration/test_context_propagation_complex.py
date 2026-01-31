@@ -75,12 +75,17 @@ async def test_propagation_sequential_workflow(mock_user_context: UserContext) -
     controller = WorkflowController(services)
 
     manifest = {
+        "id": "seq-recipe",
+        "version": "1.0.0",
         "name": "Sequential",
-        "nodes": [
-            {"id": "A", "type": "TOOL", "config": {"tool_name": "ToolA"}},
-            {"id": "B", "type": "TOOL", "config": {"tool_name": "ToolB"}},
-        ],
-        "edges": [{"source": "A", "target": "B"}],
+        "inputs": {},
+        "graph": {
+            "nodes": [
+                {"id": "A", "type": "logic", "code": "ToolA"},
+                {"id": "B", "type": "logic", "code": "ToolB"},
+            ],
+            "edges": [{"source_node_id": "A", "target_node_id": "B"}],
+        }
     }
     inputs = {"trace_id": "t"}
 
@@ -100,16 +105,21 @@ async def test_propagation_parallel_branching(mock_user_context: UserContext) ->
     controller = WorkflowController(services)
 
     manifest = {
+        "id": "parallel-recipe",
+        "version": "1.0.0",
         "name": "Parallel",
-        "nodes": [
-            {"id": "Start", "type": "TOOL", "config": {"tool_name": "StartTool"}},
-            {"id": "Branch1", "type": "TOOL", "config": {"tool_name": "Tool1"}},
-            {"id": "Branch2", "type": "TOOL", "config": {"tool_name": "Tool2"}},
-        ],
-        "edges": [
-            {"source": "Start", "target": "Branch1"},
-            {"source": "Start", "target": "Branch2"},
-        ],
+        "inputs": {},
+        "graph": {
+            "nodes": [
+                {"id": "Start", "type": "logic", "code": "StartTool"},
+                {"id": "Branch1", "type": "logic", "code": "Tool1"},
+                {"id": "Branch2", "type": "logic", "code": "Tool2"},
+            ],
+            "edges": [
+                {"source_node_id": "Start", "target_node_id": "Branch1"},
+                {"source_node_id": "Start", "target_node_id": "Branch2"},
+            ],
+        }
     }
     inputs = {"trace_id": "t"}
 
@@ -130,13 +140,18 @@ async def test_propagation_missing_context() -> None:
     controller = WorkflowController(services)
 
     manifest = {
+        "id": "none-context-recipe",
+        "version": "1.0.0",
         "name": "None Context",
-        "nodes": [{"id": "A", "type": "TOOL", "config": {"tool_name": "ToolA"}}],
-        "edges": [],
+        "inputs": {},
+        "graph": {
+            "nodes": [{"id": "A", "type": "logic", "code": "ToolA"}],
+            "edges": [],
+        }
     }
     inputs = {"trace_id": "t"}
 
     # Pass None explicitly (default) - Should raise TypeError/ValueError
     with pytest.raises((TypeError, ValueError)):
-        async for _ in controller.execute_recipe(manifest, inputs, context=None):
+        async for _ in controller.execute_recipe(manifest, inputs, context=None):  # type: ignore
             pass
