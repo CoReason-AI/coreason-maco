@@ -11,15 +11,14 @@
 import pytest
 from pydantic import ValidationError
 
-from coreason_maco.utils.context import ExecutionContext
 from coreason_maco.events.protocol import (
     ArtifactGenerated,
     EdgeTraversed,
-
     GraphEvent,
     NodeCompleted,
     NodeStarted,
 )
+from coreason_maco.utils.context import ExecutionContext
 
 # --- Edge Cases ---
 

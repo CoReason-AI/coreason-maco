@@ -1,6 +1,8 @@
 from typing import Any, Dict, List, cast
 
 import pytest
+from pydantic import ValidationError
+
 from coreason_maco.core.manifest import (
     AgentNode,
     CouncilConfig,
@@ -12,7 +14,6 @@ from coreason_maco.core.manifest import (
     RecipeManifest,
     VisualMetadata,
 )
-from pydantic import ValidationError
 
 
 # Helpers

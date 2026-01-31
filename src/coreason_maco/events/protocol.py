@@ -173,5 +173,5 @@ __all__ = [
     "EdgeTraversed",
     "ArtifactGenerated",
     "CouncilVote",
-    "WorkflowError"
+    "WorkflowError",
 ]
