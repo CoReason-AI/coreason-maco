@@ -14,7 +14,8 @@ from typing import Any
 import pytest
 
 from coreason_maco.engine.handlers import HumanNodeHandler
-from coreason_maco.events.protocol import ExecutionContext, FeedbackManager, GraphEvent
+from coreason_maco.events.protocol import GraphEvent
+from coreason_maco.utils.context import ExecutionContext, FeedbackManager
 
 
 @pytest.fixture  # type: ignore

@@ -14,12 +14,12 @@ import pytest
 from pydantic import ValidationError
 
 from coreason_maco.events.protocol import (
-    ExecutionContext,
     GraphEvent,
-    NodeCompletedPayload,
-    NodeInitPayload,
-    NodeStartedPayload,
+    NodeCompleted,
+    NodeInit,
+    NodeStarted,
 )
+from coreason_maco.utils.context import ExecutionContext
 
 
 def test_graph_event_creation_valid() -> None:
@@ -84,17 +84,17 @@ def test_execution_context_creation() -> None:
 
 def test_payload_helpers() -> None:
     """Test the payload helper models."""
-    # NodeStartedPayload requires node_id and timestamp now
-    payload = NodeStartedPayload(node_id="node-1", timestamp=123.45, input_tokens=100)
+    # NodeStarted requires node_id and timestamp now
+    payload = NodeStarted(node_id="node-1", timestamp=123.45, input_tokens=100)
     assert payload.input_tokens == 100
     assert payload.node_id == "node-1"
 
-    # NodeCompletedPayload requires node_id, output_summary
-    payload_done = NodeCompletedPayload(node_id="node-1", output_summary="Done", cost=0.05)
+    # NodeCompleted requires node_id, output_summary
+    payload_done = NodeCompleted(node_id="node-1", output_summary="Done", cost=0.05)
     assert payload_done.cost == 0.05
 
-    # NodeInitPayload
-    payload_init = NodeInitPayload(node_id="node-1", type="LLM")
+    # NodeInit
+    payload_init = NodeInit(node_id="node-1", type="LLM")
     assert payload_init.type == "LLM"
     assert payload_init.visual_cue == "IDLE"
 

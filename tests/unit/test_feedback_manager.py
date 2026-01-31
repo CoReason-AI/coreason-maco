@@ -12,7 +12,7 @@ import asyncio
 
 import pytest
 
-from coreason_maco.events.protocol import FeedbackManager
+from coreason_maco.utils.context import FeedbackManager
 
 
 @pytest.mark.asyncio  # type: ignore

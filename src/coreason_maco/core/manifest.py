@@ -1,28 +1,28 @@
 # src/coreason_maco/core/manifest.py
 
-# Re-exporting from the Shared Kernel to maintain backward compatibility
-# and provide a clean namespace for the engine.
-
-from coreason_manifest.recipes import (
-    AgentNode,
-    CouncilConfig,
+# Strictly import from Shared Kernel
+from coreason_manifest.recipes import RecipeManifest
+from coreason_manifest.definitions.topology import (
+    Node,
     Edge,
     GraphTopology,
+    VisualMetadata,
+    AgentNode,
     HumanNode,
     LogicNode,
-    Node,
-    RecipeManifest,
-    VisualMetadata,
+    CouncilConfig
 )
+from coreason_manifest.definitions.agent import AgentDefinition
 
 __all__ = [
     "RecipeManifest",
-    "GraphTopology",
-    "Node",
     "AgentNode",
     "HumanNode",
     "LogicNode",
-    "Edge",
     "CouncilConfig",
+    "Node",
+    "Edge",
+    "GraphTopology",
     "VisualMetadata",
+    "AgentDefinition"
 ]

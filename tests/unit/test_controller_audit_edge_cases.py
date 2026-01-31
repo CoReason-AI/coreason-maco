@@ -16,7 +16,8 @@ from coreason_identity.models import UserContext
 
 from coreason_maco.core.controller import WorkflowController
 from coreason_maco.core.interfaces import AgentExecutor, AuditLogger, ServiceRegistry, ToolExecutor
-from coreason_maco.events.protocol import FeedbackManager, GraphEvent
+from coreason_maco.events.protocol import GraphEvent
+from coreason_maco.utils.context import FeedbackManager
 
 
 class MockServiceRegistry(ServiceRegistry):

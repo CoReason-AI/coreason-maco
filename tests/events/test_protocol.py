@@ -11,7 +11,8 @@
 import pytest
 from pydantic import ValidationError
 
-from coreason_maco.events.protocol import ExecutionContext, GraphEvent
+from coreason_maco.events.protocol import GraphEvent
+from coreason_maco.utils.context import ExecutionContext
 
 
 def test_graph_event_valid() -> None:

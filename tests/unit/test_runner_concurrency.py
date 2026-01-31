@@ -6,7 +6,8 @@ import pytest
 
 from coreason_maco.engine.handlers import DefaultNodeHandler
 from coreason_maco.engine.runner import WorkflowRunner
-from coreason_maco.events.protocol import ExecutionContext, GraphEvent
+from coreason_maco.events.protocol import GraphEvent
+from coreason_maco.utils.context import ExecutionContext
 
 
 class ConcurrencyTrackingHandler:

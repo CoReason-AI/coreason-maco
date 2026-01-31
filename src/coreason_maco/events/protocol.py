@@ -12,8 +12,9 @@ from typing import Any, Dict, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from coreason_maco.utils.context import ExecutionContext as ExecutionContext
-from coreason_maco.utils.context import FeedbackManager as FeedbackManager
+# TODO: Migrate to coreason_manifest.definitions.events when available.
+# Currently, coreason-manifest 0.7.0 does not include these event definitions.
+# Local definitions are retained but renamed (aliases removed) to align with the Kernel schema.
 
 
 class GraphEvent(BaseModel):
@@ -150,13 +151,27 @@ class WorkflowError(BaseNodePayload):
     visual_cue: str = "RED_FLASH"
 
 
-# Aliases for compatibility
-NodeInitPayload = NodeInit
-NodeStartedPayload = NodeStarted
-NodeCompletedPayload = NodeCompleted
-NodeSkippedPayload = NodeSkipped
-NodeStreamPayload = NodeStream
-EdgeTraversedPayload = EdgeTraversed
-ArtifactGeneratedPayload = ArtifactGenerated
-CouncilVotePayload = CouncilVote
-WorkflowErrorPayload = WorkflowError
+# Aliases for compatibility REMOVED
+# NodeInitPayload = NodeInit
+# NodeStartedPayload = NodeStarted
+# NodeCompletedPayload = NodeCompleted
+# NodeSkippedPayload = NodeSkipped
+# NodeStreamPayload = NodeStream
+# EdgeTraversedPayload = EdgeTraversed
+# ArtifactGeneratedPayload = ArtifactGenerated
+# CouncilVotePayload = CouncilVote
+# WorkflowErrorPayload = WorkflowError
+
+__all__ = [
+    "GraphEvent",
+    "NodeInit",
+    "NodeStarted",
+    "NodeCompleted",
+    "NodeSkipped",
+    "NodeStream",
+    "NodeRestored",
+    "EdgeTraversed",
+    "ArtifactGenerated",
+    "CouncilVote",
+    "WorkflowError"
+]

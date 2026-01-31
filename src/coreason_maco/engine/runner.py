@@ -36,7 +36,7 @@ from coreason_maco.events.protocol import (
     NodeRestored,
     NodeSkipped,
     NodeStarted,
-    WorkflowErrorPayload,
+    WorkflowError,
 )
 from coreason_maco.utils.context import ExecutionContext
 
@@ -467,7 +467,7 @@ class WorkflowRunner:
             safe_snapshot = _sanitize(node_outputs.copy())
 
             # Emit Event
-            payload_error = WorkflowErrorPayload(
+            payload_error = WorkflowError(
                 node_id=node_id,
                 error_message=str(e),
                 stack_trace=stack,

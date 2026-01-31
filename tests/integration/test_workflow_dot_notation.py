@@ -15,7 +15,8 @@ import networkx as nx
 import pytest
 
 from coreason_maco.engine.runner import WorkflowRunner
-from coreason_maco.events.protocol import ExecutionContext, GraphEvent
+from coreason_maco.events.protocol import GraphEvent
+from coreason_maco.utils.context import ExecutionContext
 
 
 class ComplexObject:

@@ -17,7 +17,7 @@ from coreason_maco.core.interfaces import AgentExecutor, ToolExecutor
 from coreason_maco.core.manifest import CouncilConfig
 from coreason_maco.events.protocol import (
     ArtifactGenerated,
-    CouncilVotePayload,
+    CouncilVote,
     GraphEvent,
     NodeStream,
 )
@@ -270,7 +270,7 @@ class CouncilNodeHandler:
 
         result = await strategy.execute(prompt, council_config, context=context.user_context)
 
-        payload = CouncilVotePayload(
+        payload = CouncilVote(
             node_id=node_id,
             votes=result.individual_votes,
         )

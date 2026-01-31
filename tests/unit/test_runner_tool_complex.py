@@ -17,7 +17,7 @@ import pytest
 
 from coreason_maco.core.interfaces import ToolExecutor
 from coreason_maco.engine.runner import WorkflowRunner
-from coreason_maco.events.protocol import ExecutionContext
+from coreason_maco.utils.context import ExecutionContext
 
 
 class MockComplexToolExecutor(ToolExecutor):

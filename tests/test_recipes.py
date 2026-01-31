@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, cast
 
 import pytest
-from coreason_manifest.recipes import (
+from coreason_maco.core.manifest import (
     AgentNode,
     CouncilConfig,
     Edge,

@@ -19,7 +19,8 @@ from pydantic import ValidationError
 from coreason_maco.core.controller import WorkflowController
 from coreason_maco.core.interfaces import AgentExecutor, ServiceRegistry, ToolExecutor
 from coreason_maco.engine.topology import CyclicDependencyError
-from coreason_maco.events.protocol import FeedbackManager, GraphEvent
+from coreason_maco.events.protocol import GraphEvent
+from coreason_maco.utils.context import FeedbackManager
 
 
 class MockToolExecutor(ToolExecutor):

@@ -13,7 +13,8 @@ from typing import Any, Dict
 import pytest
 from pydantic import ValidationError
 
-from coreason_maco.events.protocol import ExecutionContext, GraphEvent
+from coreason_maco.events.protocol import GraphEvent
+from coreason_maco.utils.context import ExecutionContext
 
 
 class MockToolRegistry:

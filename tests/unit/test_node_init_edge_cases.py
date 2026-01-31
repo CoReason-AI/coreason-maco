@@ -15,7 +15,8 @@ import networkx as nx
 import pytest
 
 from coreason_maco.engine.runner import WorkflowRunner
-from coreason_maco.events.protocol import ExecutionContext, GraphEvent, NodeInitPayload
+from coreason_maco.events.protocol import GraphEvent, NodeInit
+from coreason_maco.utils.context import ExecutionContext
 
 
 @pytest.fixture  # type: ignore
@@ -53,7 +54,7 @@ async def test_node_init_defaults(mock_context: ExecutionContext) -> None:
     assert init_event.event_type == "NODE_INIT"
 
     # Check payload via Pydantic model
-    payload = NodeInitPayload(**init_event.payload)
+    payload = NodeInit(**init_event.payload)
     assert payload.node_id == "A"
     assert payload.type == "DEFAULT"
     assert payload.visual_cue == "IDLE"
@@ -79,11 +80,11 @@ async def test_node_init_custom_types(mock_context: ExecutionContext, mock_agent
     # Sort by node_id to ensure order for assertion
     events.sort(key=lambda e: e.node_id)
 
-    p1 = NodeInitPayload(**events[0].payload)
+    p1 = NodeInit(**events[0].payload)
     assert p1.node_id == "AgentNode"
     assert p1.type == "LLM"
 
-    p2 = NodeInitPayload(**events[1].payload)
+    p2 = NodeInit(**events[1].payload)
     assert p2.node_id == "ToolNode"
     assert p2.type == "TOOL"
 
@@ -143,7 +144,7 @@ async def test_complex_graph_initialization(mock_context: ExecutionContext, mock
         assert e.event_type == "NODE_INIT"
 
     # Verify all types are present
-    init_map = {e.node_id: NodeInitPayload(**e.payload).type for e in init_events}
+    init_map = {e.node_id: NodeInit(**e.payload).type for e in init_events}
     assert init_map == {"A": "INPUT", "B": "LLM", "C": "TOOL", "D": "OUTPUT"}
 
     # Verify total count:
