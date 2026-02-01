@@ -62,7 +62,7 @@ class MockComplexRegistry(ServiceRegistry):
         return self._agent
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio  # type: ignore[untyped-decorator]
 async def test_complex_v9_workflow(mock_user_context: UserContext) -> None:
     services = MockComplexRegistry()
     controller = WorkflowController(services)

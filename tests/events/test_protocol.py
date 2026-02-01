@@ -32,7 +32,7 @@ def test_graph_event_valid() -> None:
 def test_graph_event_invalid_type() -> None:
     with pytest.raises(ValidationError) as excinfo:
         GraphEvent(
-            event_type="INVALID_TYPE",  # type: ignore[arg-type]
+            event_type="INVALID_TYPE",
             run_id="run-123",
             node_id="node-A",
             timestamp=1234567890.0,
@@ -49,7 +49,7 @@ def test_graph_event_missing_fields() -> None:
             event_type="NODE_START",
             run_id="run-123",
             # Missing node_id
-            timestamp=1234567890.0,  # type: ignore[call-arg]
+            timestamp=1234567890.0,
             payload={},
             visual_metadata={},
         )
@@ -66,7 +66,7 @@ def test_graph_event_extra_fields() -> None:
             timestamp=1234567890.0,
             payload={},
             visual_metadata={},
-            extra_field="not_allowed",  # type: ignore[call-arg]
+            extra_field="not_allowed",
         )
 
 
@@ -102,5 +102,5 @@ def test_execution_context_invalid() -> None:
             user_id="user-1",
             # Missing trace_id
             secrets_map={},
-            tool_registry={},  # type: ignore[call-arg]
+            tool_registry={},
         )

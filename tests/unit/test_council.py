@@ -15,7 +15,8 @@ import pytest
 from coreason_identity.models import UserContext
 
 from coreason_maco.core.interfaces import AgentResponse
-from coreason_maco.strategies.council import CouncilConfig, CouncilStrategy
+from coreason_maco.core.manifest import CouncilConfig
+from coreason_maco.strategies.council import CouncilStrategy
 
 
 class MockResponse:

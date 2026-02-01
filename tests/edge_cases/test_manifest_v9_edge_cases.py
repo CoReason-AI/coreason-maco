@@ -41,7 +41,7 @@ def test_manifest_invalid_node_type() -> None:
     assert "Input tag 'INVALID_TYPE' found using 'type' does not match" in str(exc.value)
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio  # type: ignore[untyped-decorator]
 async def test_agent_node_config_extraction_edge_case(mock_user_context: Any) -> None:
     """
     Test that an AgentNode without council config works,
@@ -81,7 +81,7 @@ async def test_agent_node_config_extraction_edge_case(mock_user_context: Any) ->
     assert done[0].node_id == "A"
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio  # type: ignore[untyped-decorator]
 async def test_logic_node_execution(mock_user_context: Any) -> None:
     """Test that LogicNode (mapped to tool) works using 'code' as tool name."""
     services = ServerRegistry()

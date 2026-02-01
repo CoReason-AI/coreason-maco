@@ -35,7 +35,7 @@ def test_node_started_explicit() -> None:
 
 def test_node_started_validation() -> None:
     with pytest.raises(ValidationError) as exc:
-        NodeStarted(node_id="A")  # type: ignore[call-arg]
+        NodeStarted(node_id="A")
     assert "timestamp" in str(exc.value)
 
 
@@ -59,7 +59,7 @@ def test_node_completed_explicit() -> None:
 
 def test_node_completed_validation() -> None:
     with pytest.raises(ValidationError):
-        NodeCompleted(node_id="A")  # type: ignore[call-arg]
+        NodeCompleted(node_id="A")
 
 
 def test_edge_traversed_defaults() -> None:
@@ -76,7 +76,7 @@ def test_edge_traversed_explicit() -> None:
 
 def test_edge_traversed_validation() -> None:
     with pytest.raises(ValidationError):
-        EdgeTraversed(source="A")  # type: ignore[call-arg]
+        EdgeTraversed(source="A")
 
 
 def test_artifact_generated_defaults() -> None:
@@ -93,4 +93,4 @@ def test_artifact_generated_explicit() -> None:
 
 def test_artifact_generated_validation() -> None:
     with pytest.raises(ValidationError):
-        ArtifactGenerated(node_id="A")  # type: ignore[call-arg]
+        ArtifactGenerated(node_id="A")

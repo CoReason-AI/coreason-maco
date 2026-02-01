@@ -14,13 +14,14 @@ import time
 from typing import Any, Dict, Protocol
 
 from coreason_maco.core.interfaces import AgentExecutor, ToolExecutor
+from coreason_maco.core.manifest import CouncilConfig
 from coreason_maco.events.protocol import (
     ArtifactGenerated,
     CouncilVotePayload,
     GraphEvent,
     NodeStream,
 )
-from coreason_maco.strategies.council import CouncilConfig, CouncilStrategy
+from coreason_maco.strategies.council import CouncilStrategy
 from coreason_maco.utils.context import ExecutionContext
 
 

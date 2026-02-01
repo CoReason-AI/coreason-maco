@@ -56,12 +56,12 @@ def test_type_coercion_strictness() -> None:
     """Verify that models are strict about types (no int-to-str coercion)."""
     # Int to Str - Should Fail
     with pytest.raises(ValidationError) as exc:
-        NodeStarted(node_id=123, timestamp=1.0)  # type: ignore[arg-type]
+        NodeStarted(node_id=123, timestamp=1.0)
     assert "Input should be a valid string" in str(exc.value)
 
     # Float to Str - Should Fail
     with pytest.raises(ValidationError) as exc:
-        ArtifactGenerated(node_id="A", url=456.78)  # type: ignore[arg-type]
+        ArtifactGenerated(node_id="A", url=456.78)
     assert "Input should be a valid string" in str(exc.value)
 
     # Int to Float - Usually allowed in Pydantic V2 Lax mode, but let's check.
@@ -81,11 +81,11 @@ def test_type_coercion_strictness() -> None:
 def test_invalid_literals_strict() -> None:
     """Verify that invalid literals raise ValidationError."""
     with pytest.raises(ValidationError) as exc:
-        NodeStarted(node_id="A", timestamp=1.0, status="INVALID")  # type: ignore[arg-type]
+        NodeStarted(node_id="A", timestamp=1.0, status="INVALID")
     assert "Input should be 'RUNNING'" in str(exc.value)
 
     with pytest.raises(ValidationError) as exc:
-        NodeCompleted(node_id="A", output_summary="Done", status="PARTIAL")  # type: ignore[arg-type]
+        NodeCompleted(node_id="A", output_summary="Done", status="PARTIAL")
     assert "Input should be 'SUCCESS'" in str(exc.value)
 
 
@@ -144,7 +144,7 @@ def test_execution_context_strictness() -> None:
         ExecutionContext(
             user_id="u1",
             trace_id="t1",
-            secrets_map={"key": 123},  # type: ignore[dict-item]
+            secrets_map={"key": 123},
             tool_registry={},
         )
     assert "Input should be a valid string" in str(exc.value)
