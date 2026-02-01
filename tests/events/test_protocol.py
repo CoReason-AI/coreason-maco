@@ -102,5 +102,5 @@ def test_execution_context_invalid() -> None:
             user_id="user-1",
             # Missing trace_id
             secrets_map={},
-            tool_registry={},
+            tool_registry={},  # type: ignore[call-arg, unused-ignore]
         )
