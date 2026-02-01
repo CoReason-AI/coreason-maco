@@ -12,7 +12,25 @@ def test_health_check() -> None:
 
 
 def test_execute_workflow() -> None:
-    manifest = {"name": "Test Workflow", "nodes": [{"id": "A", "type": "LLM"}], "edges": []}
+    manifest = {
+        "id": "workflow-1",
+        "version": "1.0.0",
+        "name": "Test Workflow",
+        "topology": {
+            "nodes": [
+                {
+                    "id": "A",
+                    "type": "agent",
+                    "agent_name": "Writer",
+                    "visual": {"x_y_coordinates": [0, 0], "label": "A", "icon": "box"},
+                }
+            ],
+            "edges": [],
+        },
+        "interface": {"inputs": {}, "outputs": {}},
+        "state": {"schema": {}},
+        "parameters": {},
+    }
     inputs = {"trace_id": "test_trace"}
     user_context = {
         "user_id": "test_user",

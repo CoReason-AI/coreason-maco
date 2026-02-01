@@ -75,12 +75,29 @@ async def test_propagation_sequential_workflow(mock_user_context: UserContext) -
     controller = WorkflowController(services)
 
     manifest = {
+        "id": "test-id",
+        "version": "1.0.0",
         "name": "Sequential",
-        "nodes": [
-            {"id": "A", "type": "TOOL", "config": {"tool_name": "ToolA"}},
-            {"id": "B", "type": "TOOL", "config": {"tool_name": "ToolB"}},
-        ],
-        "edges": [{"source": "A", "target": "B"}],
+        "topology": {
+            "nodes": [
+                {
+                    "id": "A",
+                    "type": "logic",
+                    "code": "ToolA",
+                    "visual": {"x_y_coordinates": [0, 0], "label": "A", "icon": "box"},
+                },
+                {
+                    "id": "B",
+                    "type": "logic",
+                    "code": "ToolB",
+                    "visual": {"x_y_coordinates": [0, 0], "label": "B", "icon": "box"},
+                },
+            ],
+            "edges": [{"source_node_id": "A", "target_node_id": "B"}],
+        },
+        "interface": {"inputs": {}, "outputs": {}},
+        "state": {"schema": {}},
+        "parameters": {},
     }
     inputs = {"trace_id": "t"}
 
@@ -100,16 +117,38 @@ async def test_propagation_parallel_branching(mock_user_context: UserContext) ->
     controller = WorkflowController(services)
 
     manifest = {
+        "id": "test-id",
+        "version": "1.0.0",
         "name": "Parallel",
-        "nodes": [
-            {"id": "Start", "type": "TOOL", "config": {"tool_name": "StartTool"}},
-            {"id": "Branch1", "type": "TOOL", "config": {"tool_name": "Tool1"}},
-            {"id": "Branch2", "type": "TOOL", "config": {"tool_name": "Tool2"}},
-        ],
-        "edges": [
-            {"source": "Start", "target": "Branch1"},
-            {"source": "Start", "target": "Branch2"},
-        ],
+        "topology": {
+            "nodes": [
+                {
+                    "id": "Start",
+                    "type": "logic",
+                    "code": "StartTool",
+                    "visual": {"x_y_coordinates": [0, 0], "label": "S", "icon": "box"},
+                },
+                {
+                    "id": "Branch1",
+                    "type": "logic",
+                    "code": "Tool1",
+                    "visual": {"x_y_coordinates": [0, 0], "label": "B1", "icon": "box"},
+                },
+                {
+                    "id": "Branch2",
+                    "type": "logic",
+                    "code": "Tool2",
+                    "visual": {"x_y_coordinates": [0, 0], "label": "B2", "icon": "box"},
+                },
+            ],
+            "edges": [
+                {"source_node_id": "Start", "target_node_id": "Branch1"},
+                {"source_node_id": "Start", "target_node_id": "Branch2"},
+            ],
+        },
+        "interface": {"inputs": {}, "outputs": {}},
+        "state": {"schema": {}},
+        "parameters": {},
     }
     inputs = {"trace_id": "t"}
 
@@ -130,9 +169,23 @@ async def test_propagation_missing_context() -> None:
     controller = WorkflowController(services)
 
     manifest = {
+        "id": "test-id",
+        "version": "1.0.0",
         "name": "None Context",
-        "nodes": [{"id": "A", "type": "TOOL", "config": {"tool_name": "ToolA"}}],
-        "edges": [],
+        "topology": {
+            "nodes": [
+                {
+                    "id": "A",
+                    "type": "logic",
+                    "code": "ToolA",
+                    "visual": {"x_y_coordinates": [0, 0], "label": "A", "icon": "box"},
+                }
+            ],
+            "edges": [],
+        },
+        "interface": {"inputs": {}, "outputs": {}},
+        "state": {"schema": {}},
+        "parameters": {},
     }
     inputs = {"trace_id": "t"}
 

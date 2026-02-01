@@ -71,6 +71,10 @@ class WorkflowRunner:
             "LLM": LLMNodeHandler(agent_executor),
             "COUNCIL": CouncilNodeHandler(agent_executor),
             "HUMAN": HumanNodeHandler(),
+            # Kernel mappings
+            "agent": LLMNodeHandler(agent_executor),
+            "human": HumanNodeHandler(),
+            "logic": ToolNodeHandler(),
         }
         self.default_handler = DefaultNodeHandler()
 

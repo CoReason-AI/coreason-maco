@@ -44,7 +44,7 @@ def test_graph_event_missing_fields() -> None:
     """Test that missing required fields raise ValidationError."""
     with pytest.raises(ValidationError) as excinfo:
         GraphEvent(
-            event_type="NODE_START",  # type: ignore[call-arg]
+            event_type="NODE_START",
             # run_id missing
             # node_id missing
             trace_id="trace-456",
@@ -64,7 +64,7 @@ def test_graph_event_invalid_type() -> None:
             run_id="run-123",
             node_id="node-A",
             trace_id="trace-456",
-            timestamp="not-a-float",  # type: ignore[arg-type]
+            timestamp="not-a-float",
             payload={},
             visual_metadata={},
         )

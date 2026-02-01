@@ -109,7 +109,7 @@ def test_graph_event_complex_nested_payload() -> None:
     }
 
     event = GraphEvent(
-        event_type="NODE_END",
+        event_type="NODE_DONE",
         run_id="r-nested",
         node_id="n-nested",
         timestamp=555.5,
@@ -147,7 +147,7 @@ def test_graph_event_edge_visual_metadata_types() -> None:
             node_id="n1",
             timestamp=1.0,
             payload={},
-            visual_metadata={"step": 123},  # type: ignore[dict-item]
+            visual_metadata={"step": 123},
         )
     assert "Input should be a valid string" in str(excinfo.value)
 
@@ -161,5 +161,5 @@ def test_graph_event_edge_invalid_visual_metadata() -> None:
             node_id="n1",
             timestamp=1.0,
             payload={},
-            visual_metadata="not-a-dict",  # type: ignore[arg-type]
+            visual_metadata="not-a-dict",
         )

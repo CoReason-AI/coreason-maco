@@ -9,9 +9,23 @@ client = TestClient(app)
 
 def test_execute_workflow_error() -> None:
     manifest = {
+        "id": "err",
+        "version": "1.0.0",
         "name": "Error Workflow",
-        "nodes": [{"id": "A", "type": "LLM"}],
-        "edges": [],
+        "topology": {
+            "nodes": [
+                {
+                    "id": "A",
+                    "type": "agent",
+                    "agent_name": "A",
+                    "visual": {"x_y_coordinates": [0, 0], "label": "A", "icon": "box"},
+                }
+            ],
+            "edges": [],
+        },
+        "interface": {"inputs": {}, "outputs": {}},
+        "state": {"schema": {}},
+        "parameters": {},
     }
     # Inputs that cause a validation error or similar to trigger the exception block
     inputs: Dict[str, Any] = {

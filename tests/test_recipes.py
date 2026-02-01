@@ -1,7 +1,9 @@
 from typing import Any, Dict, List, cast
 
 import pytest
-from coreason_manifest.recipes import (
+from pydantic import ValidationError
+
+from coreason_maco.core.manifest import (
     AgentNode,
     CouncilConfig,
     Edge,
@@ -12,7 +14,6 @@ from coreason_manifest.recipes import (
     RecipeManifest,
     VisualMetadata,
 )
-from pydantic import ValidationError
 
 
 # Helpers
@@ -88,8 +89,10 @@ def test_version_validation() -> None:
         "version": "1.0.0",
         "name": "Test Recipe",
         "description": "A test",
-        "inputs": {},
-        "graph": {"nodes": [], "edges": []},
+        "topology": {"nodes": [], "edges": []},
+        "interface": {"inputs": {}, "outputs": {}},
+        "state": {"schema": {}},
+        "parameters": {},
     }
 
     # Should pass

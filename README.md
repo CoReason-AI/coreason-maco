@@ -25,6 +25,11 @@ As the **Orchestrator**, it manages a team of specialized agents to:
 *   **GxP Compliance & Determinism:** Ensures workflows are reproducible. Running the same "Recipe" with the same inputs and "Seed" yields the exact same result.
 *   **Secure Identity Propagation:** Propagates `UserContext` (Identity Passport) securely to all workers and tools, ensuring "On-Behalf-Of" execution without leaking tokens in UI events.
 
+## Integration with Coreason Manifest v0.9.0
+
+This library strictly adheres to the `coreason-manifest` shared kernel.
+See [Coreason Manifest Integration Guide](docs/coreason-manifest-integration.md) for details on schema structure and migration.
+
 ## Installation
 
 ```bash
@@ -53,13 +58,26 @@ async def main():
     # 2. Initialize Controller
     controller = WorkflowController(services=services)
 
-    # 3. Define a Simple Manifest (Recipe)
+    # 3. Define a Manifest (Recipe)
+    # Note: Structure strictly follows coreason-manifest schema
     manifest = {
+        "id": "example-flow",
+        "version": "1.0.0",
         "name": "Simple Greeting",
-        "nodes": [
-            {"id": "node_1", "type": "LLM", "config": {"prompt": "Say hello!"}}
-        ],
-        "edges": []
+        "topology": {
+            "nodes": [
+                {
+                    "id": "node_1",
+                    "type": "agent",
+                    "agent_name": "Greeter",
+                    "visual": {"x_y_coordinates": [0,0], "label": "Start", "icon": "box"}
+                }
+            ],
+            "edges": []
+        },
+        "interface": {"inputs": {}, "outputs": {}},
+        "state": {"schema": {}},
+        "parameters": {}
     }
 
     # 4. Define Inputs
@@ -71,9 +89,14 @@ async def main():
 
     # 5. Execute Workflow
     print("Starting Workflow...")
-    # Pass user_context (Optional)
-    async for event in controller.execute_recipe(manifest, inputs, user_context=None):
-        print(f"Event: {event.event_type} | Node: {event.node_id} | Payload: {event.payload}")
+
+    # Mock context for example purposes if not available
+    context_obj = UserContext(...) if UserContext else None
+
+    # Pass user_context
+    if context_obj:
+        async for event in controller.execute_recipe(manifest, inputs, context=context_obj):
+            print(f"Event: {event.event_type} | Node: {event.node_id} | Payload: {event.payload}")
 
 if __name__ == "__main__":
     asyncio.run(main())

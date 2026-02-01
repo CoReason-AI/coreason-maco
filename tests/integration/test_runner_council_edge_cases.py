@@ -98,21 +98,34 @@ async def test_council_node_invalid_config(mock_user_context: UserContext) -> No
     services = MockServiceRegistry()
     controller = WorkflowController(services)
 
-    # Missing 'agents' and 'synthesizer'
+    # Missing 'agents' (voters) and 'synthesizer' (strategy)
     manifest = {
+        "id": "test-id",
+        "version": "1.0.0",
         "name": "Invalid Council",
-        "nodes": [
-            {"id": "bad_node", "type": "COUNCIL", "config": {"prompt": "Analyze"}},
-        ],
-        "edges": [],
+        "topology": {
+            "nodes": [
+                {
+                    "id": "bad_node",
+                    "type": "agent",
+                    "agent_name": "A",
+                    "visual": {"x_y_coordinates": [0, 0], "label": "A", "icon": "box"},
+                    "council_config": {"strategy": "consensus"},  # Missing voters
+                },
+            ],
+            "edges": [],
+        },
+        "interface": {"inputs": {}, "outputs": {}},
+        "state": {"schema": {}},
+        "parameters": {},
     }
     inputs = {"trace_id": "t"}
 
-    # Expect ValidationError from Pydantic when CouncilConfig is instantiated inside the runner
-    # The runner catches exceptions in _execution_task? No, it raises them.
-    # The task group in _execution_task will raise ExceptionGroup (Py3.11+) or the exception.
+    # Expect ValidationError when RecipeManifest parses the node, OR when CouncilConfig is validated
+    # AgentNode validation might catch missing voters in CouncilConfig if CouncilConfig requires them.
+    # CouncilConfig.voters is required. So RecipeManifest validation should fail.
 
-    with pytest.raises((ValidationError, ExceptionGroup)):
+    with pytest.raises(ValidationError):
         async for _ in controller.execute_recipe(manifest, inputs, context=mock_user_context):
             pass
 
@@ -126,15 +139,24 @@ async def test_council_node_execution_failure(mock_user_context: UserContext) ->
     controller = WorkflowController(services)
 
     manifest = {
+        "id": "test-id",
+        "version": "1.0.0",
         "name": "Failing Council",
-        "nodes": [
-            {
-                "id": "fail_node",
-                "type": "COUNCIL",
-                "config": {"agents": [{"model": "gpt-4"}], "synthesizer": {"model": "judge"}, "prompt": "Analyze"},
-            },
-        ],
-        "edges": [],
+        "topology": {
+            "nodes": [
+                {
+                    "id": "fail_node",
+                    "type": "agent",
+                    "agent_name": "Chair",
+                    "visual": {"x_y_coordinates": [0, 0], "label": "A", "icon": "box"},
+                    "council_config": {"strategy": "consensus", "voters": ["gpt-4"]},
+                },
+            ],
+            "edges": [],
+        },
+        "interface": {"inputs": {}, "outputs": {}},
+        "state": {"schema": {}},
+        "parameters": {},
     }
     inputs = {"trace_id": "t"}
 
@@ -156,24 +178,40 @@ async def test_parallel_council_nodes(mock_user_context: UserContext) -> None:
     controller = WorkflowController(services)
 
     manifest = {
+        "id": "test-id",
+        "version": "1.0.0",
         "name": "Parallel Councils",
-        "nodes": [
-            {"id": "Start", "type": "START", "config": {}},
-            {
-                "id": "Council_A",
-                "type": "COUNCIL",
-                "config": {"agents": [{"model": "gpt-4"}], "synthesizer": {"model": "judge"}, "prompt": "Q1"},
-            },
-            {
-                "id": "Council_B",
-                "type": "COUNCIL",
-                "config": {"agents": [{"model": "claude"}], "synthesizer": {"model": "judge"}, "prompt": "Q2"},
-            },
-        ],
-        "edges": [
-            {"source": "Start", "target": "Council_A"},
-            {"source": "Start", "target": "Council_B"},
-        ],
+        "topology": {
+            "nodes": [
+                {
+                    "id": "Start",
+                    "type": "agent",
+                    "agent_name": "S",
+                    "visual": {"x_y_coordinates": [0, 0], "label": "A", "icon": "box"},
+                },  # Use agent as dummy start
+                {
+                    "id": "Council_A",
+                    "type": "agent",
+                    "agent_name": "A",
+                    "visual": {"x_y_coordinates": [0, 0], "label": "A", "icon": "box"},
+                    "council_config": {"voters": ["gpt-4"], "strategy": "consensus"},
+                },
+                {
+                    "id": "Council_B",
+                    "type": "agent",
+                    "agent_name": "B",
+                    "visual": {"x_y_coordinates": [0, 0], "label": "B", "icon": "box"},
+                    "council_config": {"voters": ["claude"], "strategy": "consensus"},
+                },
+            ],
+            "edges": [
+                {"source_node_id": "Start", "target_node_id": "Council_A"},
+                {"source_node_id": "Start", "target_node_id": "Council_B"},
+            ],
+        },
+        "interface": {"inputs": {}, "outputs": {}},
+        "state": {"schema": {}},
+        "parameters": {},
     }
     inputs = {"trace_id": "t"}
 
@@ -202,8 +240,6 @@ async def test_parallel_council_nodes(mock_user_context: UserContext) -> None:
 @pytest.mark.asyncio  # type: ignore
 async def test_council_node_missing_executor(mock_user_context: UserContext) -> None:
     """Test that missing agent_executor raises ValueError for Council node."""
-    # To simulate missing executor, we need to pass None to WorkflowRunner.
-    # We can do this by mocking ServiceRegistry to return None.
 
     # Custom registry that returns None
     class NoneExecutorRegistry(ServiceRegistry):
@@ -229,15 +265,24 @@ async def test_council_node_missing_executor(mock_user_context: UserContext) -> 
     controller = WorkflowController(services)
 
     manifest = {
+        "id": "test-id",
+        "version": "1.0.0",
         "name": "Missing Exec Council",
-        "nodes": [
-            {
-                "id": "node",
-                "type": "COUNCIL",
-                "config": {"agents": [{"model": "gpt-4"}], "synthesizer": {"model": "judge"}, "prompt": "Analyze"},
-            },
-        ],
-        "edges": [],
+        "topology": {
+            "nodes": [
+                {
+                    "id": "node",
+                    "type": "agent",
+                    "agent_name": "A",
+                    "visual": {"x_y_coordinates": [0, 0], "label": "A", "icon": "box"},
+                    "council_config": {"voters": ["gpt-4"], "strategy": "consensus"},
+                },
+            ],
+            "edges": [],
+        },
+        "interface": {"inputs": {}, "outputs": {}},
+        "state": {"schema": {}},
+        "parameters": {},
     }
     inputs = {"trace_id": "t"}
 
