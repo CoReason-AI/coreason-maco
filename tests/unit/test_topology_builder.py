@@ -8,9 +8,10 @@
 #
 # Source Code: https://github.com/CoReason-AI/coreason_maco
 
+from typing import List, Any
 import pytest
 
-from coreason_maco.core.manifest import EdgeModel, NodeModel, RecipeManifest
+from coreason_maco.core.manifest import AgentNode, Edge, RecipeManifest, VisualMetadata, Node
 from coreason_maco.engine.topology import CyclicDependencyError, GraphIntegrityError, TopologyEngine
 
 
@@ -19,11 +20,31 @@ def topology_engine() -> TopologyEngine:
     return TopologyEngine()
 
 
+def create_visual() -> VisualMetadata:
+    return VisualMetadata(x_y_coordinates=[0.0, 0.0], label="Node", icon="box")
+
+
+def create_manifest(nodes: List[Node], edges: List[Edge], name: str = "Test") -> RecipeManifest:
+    return RecipeManifest(
+        id="test-id",
+        version="1.0.0",
+        name=name,
+        description="Test Description",
+        topology={"nodes": nodes, "edges": edges},
+        interface={"inputs": {}, "outputs": {}},
+        state={"schema": {}},
+        parameters={}
+    )
+
+
 def test_build_simple_linear_graph(topology_engine: TopologyEngine) -> None:
-    manifest = RecipeManifest(
+    manifest = create_manifest(
         name="Linear",
-        nodes=[NodeModel(id="A", type="START"), NodeModel(id="B", type="END")],
-        edges=[EdgeModel(source="A", target="B")],
+        nodes=[
+            AgentNode(id="A", type="agent", agent_name="AgentA", visual=create_visual()),
+            AgentNode(id="B", type="agent", agent_name="AgentB", visual=create_visual())
+        ],
+        edges=[Edge(source_node_id="A", target_node_id="B")],
     )
 
     graph = topology_engine.build_graph(manifest)
@@ -31,24 +52,24 @@ def test_build_simple_linear_graph(topology_engine: TopologyEngine) -> None:
     assert graph.name == "Linear"
     assert len(graph.nodes) == 2
     assert len(graph.edges) == 1
-    assert graph.nodes["A"]["type"] == "START"
+    assert graph.nodes["A"]["type"] == "agent"
     assert graph.has_edge("A", "B")
 
 
 def test_build_branching_graph(topology_engine: TopologyEngine) -> None:
-    manifest = RecipeManifest(
+    manifest = create_manifest(
         name="Branching",
         nodes=[
-            NodeModel(id="A", type="START"),
-            NodeModel(id="B", type="PROCESS"),
-            NodeModel(id="C", type="PROCESS"),
-            NodeModel(id="D", type="END"),
+            AgentNode(id="A", type="agent", agent_name="AgentA", visual=create_visual()),
+            AgentNode(id="B", type="agent", agent_name="AgentB", visual=create_visual()),
+            AgentNode(id="C", type="agent", agent_name="AgentC", visual=create_visual()),
+            AgentNode(id="D", type="agent", agent_name="AgentD", visual=create_visual()),
         ],
         edges=[
-            EdgeModel(source="A", target="B"),
-            EdgeModel(source="A", target="C"),
-            EdgeModel(source="B", target="D"),
-            EdgeModel(source="C", target="D"),
+            Edge(source_node_id="A", target_node_id="B"),
+            Edge(source_node_id="A", target_node_id="C"),
+            Edge(source_node_id="B", target_node_id="D"),
+            Edge(source_node_id="C", target_node_id="D"),
         ],
     )
 
@@ -61,10 +82,17 @@ def test_build_branching_graph(topology_engine: TopologyEngine) -> None:
 
 
 def test_build_conditional_graph(topology_engine: TopologyEngine) -> None:
-    manifest = RecipeManifest(
+    manifest = create_manifest(
         name="Conditional",
-        nodes=[NodeModel(id="A", type="START"), NodeModel(id="B", type="PROCESS"), NodeModel(id="C", type="PROCESS")],
-        edges=[EdgeModel(source="A", target="B", condition="yes"), EdgeModel(source="A", target="C", condition="no")],
+        nodes=[
+            AgentNode(id="A", type="agent", agent_name="AgentA", visual=create_visual()),
+            AgentNode(id="B", type="agent", agent_name="AgentB", visual=create_visual()),
+            AgentNode(id="C", type="agent", agent_name="AgentC", visual=create_visual())
+        ],
+        edges=[
+            Edge(source_node_id="A", target_node_id="B", condition="yes"),
+            Edge(source_node_id="A", target_node_id="C", condition="no")
+        ],
     )
 
     graph = topology_engine.build_graph(manifest)
@@ -77,8 +105,13 @@ def test_build_conditional_graph(topology_engine: TopologyEngine) -> None:
 
 
 def test_build_disconnected_graph_raises_error(topology_engine: TopologyEngine) -> None:
-    manifest = RecipeManifest(
-        name="Disconnected", nodes=[NodeModel(id="A", type="START"), NodeModel(id="B", type="ISLAND")], edges=[]
+    manifest = create_manifest(
+        name="Disconnected",
+        nodes=[
+            AgentNode(id="A", type="agent", agent_name="AgentA", visual=create_visual()),
+            AgentNode(id="B", type="agent", agent_name="AgentB", visual=create_visual())
+        ],
+        edges=[]
     )
 
     with pytest.raises(GraphIntegrityError):
@@ -86,10 +119,16 @@ def test_build_disconnected_graph_raises_error(topology_engine: TopologyEngine) 
 
 
 def test_build_cyclic_graph_raises_error(topology_engine: TopologyEngine) -> None:
-    manifest = RecipeManifest(
+    manifest = create_manifest(
         name="Cyclic",
-        nodes=[NodeModel(id="A", type="START"), NodeModel(id="B", type="PROCESS")],
-        edges=[EdgeModel(source="A", target="B"), EdgeModel(source="B", target="A")],
+        nodes=[
+            AgentNode(id="A", type="agent", agent_name="AgentA", visual=create_visual()),
+            AgentNode(id="B", type="agent", agent_name="AgentB", visual=create_visual())
+        ],
+        edges=[
+            Edge(source_node_id="A", target_node_id="B"),
+            Edge(source_node_id="B", target_node_id="A")
+        ],
     )
 
     with pytest.raises(CyclicDependencyError):
@@ -97,12 +136,15 @@ def test_build_cyclic_graph_raises_error(topology_engine: TopologyEngine) -> Non
 
 
 def test_node_config_preserved(topology_engine: TopologyEngine) -> None:
-    manifest = RecipeManifest(
-        name="Config", nodes=[NodeModel(id="A", type="LLM", config={"model": "gpt-4", "temp": 0.7})], edges=[]
+    # Use AgentNode and verify agent_name is preserved in config
+    manifest = create_manifest(
+        name="Config",
+        nodes=[AgentNode(id="A", type="agent", agent_name="GPT-4", visual=create_visual())],
+        edges=[]
     )
 
     graph = topology_engine.build_graph(manifest)
 
     node_a = graph.nodes["A"]
-    assert node_a["config"]["model"] == "gpt-4"
-    assert node_a["config"]["temp"] == 0.7
+    # TopologyEngine now extracts agent_name into config
+    assert node_a["config"]["agent_name"] == "GPT-4"

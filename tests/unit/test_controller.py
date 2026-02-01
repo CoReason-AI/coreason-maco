@@ -84,12 +84,20 @@ async def test_controller_execution_flow(mock_user_context: UserContext) -> None
     MockRunnerCls = MagicMock(return_value=mock_runner)
     controller = WorkflowController(services, topology=mock_topology, runner_cls=MockRunnerCls)
 
+    # Use valid node type 'agent'
     manifest = {
+        "id": "test-id",
+        "version": "1.0.0",
         "name": "Test Recipe",
-        "nodes": [
-            {"id": "A", "type": "LLM", "config": {"mock_output": "Output A"}},
-        ],
-        "edges": [],
+        "topology": {
+            "nodes": [
+                {"id": "A", "type": "agent", "agent_name": "A", "visual": {"x_y_coordinates": [0,0], "label": "A", "icon": "box"}},
+            ],
+            "edges": [],
+        },
+        "interface": {"inputs": {}, "outputs": {}},
+        "state": {"schema": {}},
+        "parameters": {}
     }
 
     inputs = {"user_id": "user123", "trace_id": "trace123", "secrets_map": {}}
@@ -116,9 +124,16 @@ async def test_controller_missing_inputs(mock_user_context: UserContext) -> None
     controller = WorkflowController(services)
 
     manifest: dict[str, Any] = {
+        "id": "test-id",
+        "version": "1.0.0",
         "name": "Test Recipe",
-        "nodes": [],
-        "edges": [],
+        "topology": {
+            "nodes": [],
+            "edges": [],
+        },
+        "interface": {"inputs": {}, "outputs": {}},
+        "state": {"schema": {}},
+        "parameters": {}
     }
 
     # Missing trace_id
@@ -134,10 +149,10 @@ async def test_controller_invalid_manifest(mock_user_context: UserContext) -> No
     services = MockServiceRegistry()
     controller = WorkflowController(services)
 
-    # Missing 'nodes'
+    # Missing 'topology' (was nodes/edges)
     manifest: dict[str, Any] = {
         "name": "Test Recipe",
-        "edges": [],
+        # Missing topology
     }
 
     inputs = {"user_id": "u", "trace_id": "t"}
@@ -155,9 +170,16 @@ async def test_controller_topology_error(mock_user_context: UserContext) -> None
     controller = WorkflowController(services, topology=mock_topology)
 
     manifest = {
+        "id": "test-id",
+        "version": "1.0.0",
         "name": "Cyclic Recipe",
-        "nodes": [{"id": "A", "type": "LLM"}],
-        "edges": [{"source": "A", "target": "A"}],
+        "topology": {
+            "nodes": [{"id": "A", "type": "agent", "agent_name": "A", "visual": {"x_y_coordinates": [0,0], "label": "A", "icon": "box"}}],
+            "edges": [{"source_node_id": "A", "target_node_id": "A"}],
+        },
+        "interface": {"inputs": {}, "outputs": {}},
+        "state": {"schema": {}},
+        "parameters": {}
     }
     inputs = {"user_id": "u", "trace_id": "t"}
 
@@ -175,9 +197,16 @@ async def test_controller_runtime_error(mock_user_context: UserContext) -> None:
     controller = WorkflowController(services, runner_cls=MockRunnerCls)
 
     manifest = {
+        "id": "test-id",
+        "version": "1.0.0",
         "name": "Broken Recipe",
-        "nodes": [{"id": "A", "type": "LLM"}],
-        "edges": [],
+        "topology": {
+            "nodes": [{"id": "A", "type": "agent", "agent_name": "A", "visual": {"x_y_coordinates": [0,0], "label": "A", "icon": "box"}}],
+            "edges": [],
+        },
+        "interface": {"inputs": {}, "outputs": {}},
+        "state": {"schema": {}},
+        "parameters": {}
     }
     inputs = {"user_id": "u", "trace_id": "t"}
 
@@ -202,9 +231,16 @@ async def test_controller_empty_graph(mock_user_context: UserContext) -> None:
     controller = WorkflowController(services, topology=mock_topology, runner_cls=MockRunnerCls)
 
     manifest = {
+        "id": "test-id",
+        "version": "1.0.0",
         "name": "Empty Recipe",
-        "nodes": [],
-        "edges": [],
+        "topology": {
+            "nodes": [],
+            "edges": [],
+        },
+        "interface": {"inputs": {}, "outputs": {}},
+        "state": {"schema": {}},
+        "parameters": {}
     }
     inputs = {"user_id": "u", "trace_id": "t"}
 
@@ -235,9 +271,16 @@ async def test_controller_context_construction() -> None:
     controller = WorkflowController(services, runner_cls=MockRunnerCls)
 
     manifest = {
+        "id": "test-id",
+        "version": "1.0.0",
         "name": "Context Test",
-        "nodes": [{"id": "A", "type": "LLM"}],
-        "edges": [],
+        "topology": {
+            "nodes": [{"id": "A", "type": "agent", "agent_name": "A", "visual": {"x_y_coordinates": [0,0], "label": "A", "icon": "box"}}],
+            "edges": [],
+        },
+        "interface": {"inputs": {}, "outputs": {}},
+        "state": {"schema": {}},
+        "parameters": {}
     }
     inputs = {
         "user_id": "specific_user",
@@ -294,7 +337,18 @@ async def test_controller_no_audit_logger(mock_user_context: UserContext) -> Non
 
     controller = WorkflowController(services, runner_cls=MockRunnerCls)
 
-    manifest = {"name": "No Audit", "nodes": [], "edges": []}
+    manifest = {
+        "id": "test-id",
+        "version": "1.0.0",
+        "name": "No Audit",
+        "topology": {
+            "nodes": [],
+            "edges": []
+        },
+        "interface": {"inputs": {}, "outputs": {}},
+        "state": {"schema": {}},
+        "parameters": {}
+    }
     inputs = {"user_id": "u", "trace_id": "t"}
 
     async for _ in controller.execute_recipe(manifest, inputs, context=mock_user_context):
@@ -320,7 +374,18 @@ async def test_controller_feedback_injection(mock_user_context: UserContext) -> 
 
     controller = WorkflowController(services, runner_cls=MockRunnerCls)
 
-    manifest = {"name": "Feedback Test", "nodes": [], "edges": []}
+    manifest = {
+        "id": "test-id",
+        "version": "1.0.0",
+        "name": "Feedback Test",
+        "topology": {
+            "nodes": [],
+            "edges": []
+        },
+        "interface": {"inputs": {}, "outputs": {}},
+        "state": {"schema": {}},
+        "parameters": {}
+    }
 
     # Mock FeedbackManager
     feedback_manager = FeedbackManager()
@@ -360,7 +425,18 @@ async def test_controller_context_var_propagation(mock_user_context: UserContext
 
     controller = WorkflowController(services, runner_cls=MockRunnerCls)
 
-    manifest = {"name": "Ctx Test", "nodes": [], "edges": []}
+    manifest = {
+        "id": "test-id",
+        "version": "1.0.0",
+        "name": "Ctx Test",
+        "topology": {
+            "nodes": [],
+            "edges": []
+        },
+        "interface": {"inputs": {}, "outputs": {}},
+        "state": {"schema": {}},
+        "parameters": {}
+    }
     inputs = {"user_id": "u", "trace_id": "trace-123"}
 
     async for _ in controller.execute_recipe(manifest, inputs, context=mock_user_context):

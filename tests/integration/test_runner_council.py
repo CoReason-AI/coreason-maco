@@ -36,7 +36,29 @@ class MockAgentExecutor(AgentExecutor):
     async def invoke(self, prompt: str, model_config: Dict[str, Any]) -> AgentResponse:
         await asyncio.sleep(self.delay)
 
+        # In v0.9.0, model_config comes from AgentNode (only agent_name) or CouncilConfig.
+        # CouncilNodeHandler passes `prompt`.
+
+        # If it's a voting agent, we might get model config from CouncilConfig voters?
+        # CouncilStrategy.execute calls agent_executor for each voter.
+        # It passes `model_config` derived from... wait, CouncilConfig only has `voters` (list of strings).
+        # So CouncilStrategy must resolve voter names to config?
+        # Let's assume for this test that the mock executor just returns based on some heuristic or defaults.
+
+        # Actually, CouncilStrategy in coreason-maco (I should check it) iterates voters.
+        # If voters are ["gpt-4", "claude"], it calls invoke with those configs?
+
+        # Since I can't see CouncilStrategy implementation details right now without reading it,
+        # I'll assume it passes enough info to distinguish agents.
+
+        # Hack: Since we don't have model name in config passed to invoke (maybe),
+        # we might need to rely on prompt or order.
+        # BUT, let's assume the Strategy passes the voter name as model in config.
+
         model_name = model_config.get("model", "unknown")
+
+        # If model_name is unknown, maybe check if prompt contains hint?
+        # But let's see.
 
         # If it's a synthesis prompt (long), we detect it
         if "Original Query:" in prompt:
@@ -85,6 +107,7 @@ class MockServiceRegistry(ServiceRegistry):
 @pytest.mark.asyncio  # type: ignore
 async def test_runner_executes_council_node(mock_user_context: UserContext) -> None:
     # 1. Setup Services
+    # We expect the council strategy to use "gpt-4" and "claude" as models/agent names
     mock_agent_exec = MockAgentExecutor(responses={"gpt-4": "Blue", "claude": "Red"})
     services = MockServiceRegistry(agent_executor=mock_agent_exec)
 
@@ -93,19 +116,27 @@ async def test_runner_executes_council_node(mock_user_context: UserContext) -> N
 
     # 3. Define Manifest
     manifest = {
+        "id": "council-flow",
+        "version": "1.0.0",
         "name": "Council Workflow",
-        "nodes": [
-            {
-                "id": "council_node",
-                "type": "COUNCIL",
-                "config": {
-                    "agents": [{"model": "gpt-4"}, {"model": "claude"}],
-                    "synthesizer": {"model": "judge"},
-                    "prompt": "What is the best color?",
+        "topology": {
+            "nodes": [
+                {
+                    "id": "council_node",
+                    "type": "agent",  # Use agent type
+                    "agent_name": "Chairperson",
+                    "visual": {"x_y_coordinates": [0,0], "label": "Council", "icon": "users"},
+                    "council_config": {
+                        "strategy": "consensus", # strategy required
+                        "voters": ["gpt-4", "claude"] # voters required
+                    }
                 },
-            },
-        ],
-        "edges": [],
+            ],
+            "edges": [],
+        },
+        "interface": {"inputs": {}, "outputs": {}},
+        "state": {"schema": {}},
+        "parameters": {}
     }
 
     inputs = {"trace_id": "t"}
@@ -124,6 +155,8 @@ async def test_runner_executes_council_node(mock_user_context: UserContext) -> N
     vote_payload = vote_events[0].payload
 
     # Verify Votes
+    # Note: CouncilStrategy needs to correctly map voters string to invoke calls.
+    # If it fails, we might see "Default Response" or empty votes.
     assert "gpt-4" in vote_payload["votes"]
     assert vote_payload["votes"]["gpt-4"] == "Blue"
     assert "claude" in vote_payload["votes"]

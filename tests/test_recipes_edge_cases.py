@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, cast
 
 import pytest
-from coreason_manifest.recipes import Edge, GraphTopology, HumanNode, Node, VisualMetadata
+from coreason_maco.core.manifest import Edge, GraphTopology, HumanNode, Node, VisualMetadata, AgentNode
 from pydantic import ValidationError
 
 

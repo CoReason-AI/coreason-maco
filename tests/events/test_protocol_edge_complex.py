@@ -109,7 +109,7 @@ def test_graph_event_complex_nested_payload() -> None:
     }
 
     event = GraphEvent(
-        event_type="NODE_END",
+        event_type="NODE_DONE",
         run_id="r-nested",
         node_id="n-nested",
         timestamp=555.5,

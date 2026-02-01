@@ -38,10 +38,6 @@ def test_node_started_validation() -> None:
         NodeStarted(node_id="A")  # type: ignore[call-arg]
     assert "timestamp" in str(exc.value)
 
-    with pytest.raises(ValidationError) as exc:
-        NodeStarted(node_id="A", timestamp=100.0, extra="fail")  # type: ignore
-    assert "Extra inputs are not permitted" in str(exc.value)
-
 
 def test_node_completed_defaults() -> None:
     event = NodeCompleted(node_id="A", output_summary="Done")

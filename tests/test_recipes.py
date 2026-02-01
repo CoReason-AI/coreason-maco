@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, cast
 
 import pytest
-from coreason_manifest.recipes import (
+from coreason_maco.core.manifest import (
     AgentNode,
     CouncilConfig,
     Edge,
@@ -88,8 +88,10 @@ def test_version_validation() -> None:
         "version": "1.0.0",
         "name": "Test Recipe",
         "description": "A test",
-        "inputs": {},
-        "graph": {"nodes": [], "edges": []},
+        "topology": {"nodes": [], "edges": []},
+        "interface": {"inputs": {}, "outputs": {}},
+        "state": {"schema": {}},
+        "parameters": {},
     }
 
     # Should pass

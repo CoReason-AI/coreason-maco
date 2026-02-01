@@ -8,11 +8,11 @@
 #
 # Source Code: https://github.com/CoReason-AI/coreason_maco
 
-from typing import List
+from typing import List, Any, Dict
 
 import networkx as nx
 
-from coreason_maco.core.manifest import RecipeManifest
+from coreason_maco.core.manifest import RecipeManifest, AgentNode, HumanNode
 
 
 class CyclicDependencyError(Exception):
@@ -43,16 +43,38 @@ class TopologyEngine:
         """
         graph = nx.DiGraph(name=manifest.name)
 
-        for node in manifest.nodes:
+        # Access graph topology from the 'topology' attribute
+        # manifest.topology.nodes and manifest.topology.edges
+        nodes = manifest.topology.nodes
+        edges = manifest.topology.edges
+
+        for node in nodes:
             # Store node attributes
             # id is used as the node key
-            graph.add_node(node.id, type=node.type, config=node.config)
 
-        for edge in manifest.edges:
+            config: Dict[str, Any] = {}
+            if isinstance(node, AgentNode):
+                 # AgentNode has agent_name. Pass it in config.
+                 config = node.model_dump(exclude={"id", "type", "visual"}, exclude_unset=True)
+                 # Ensure council_config is accessible if present (it's in the dump, but let's be explicit if needed)
+            elif isinstance(node, HumanNode):
+                 config = node.model_dump(exclude={"id", "type", "visual"}, exclude_unset=True)
+            else:
+                 # Fallback for other nodes: use .config if available or dump
+                 if hasattr(node, "config"):
+                     config = node.config
+                 else:
+                     config = node.model_dump(exclude={"id", "type", "visual"}, exclude_unset=True)
+
+            graph.add_node(node.id, type=node.type, config=config)
+
+        for edge in edges:
             edge_attrs = {}
             if edge.condition:
                 edge_attrs["condition"] = edge.condition
-            graph.add_edge(edge.source, edge.target, **edge_attrs)
+
+            # Kernel edges use source_node_id / target_node_id
+            graph.add_edge(edge.source_node_id, edge.target_node_id, **edge_attrs)
 
         self.validate_graph(graph)
 

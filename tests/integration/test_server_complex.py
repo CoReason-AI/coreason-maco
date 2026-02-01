@@ -8,16 +8,38 @@ client = TestClient(app)
 def test_complex_workflow_execution() -> None:
     """Test a workflow with multiple nodes and dependencies."""
     manifest = {
+        "id": "complex-1",
+        "version": "1.0.0",
         "name": "Complex Workflow",
-        "nodes": [
-            {"id": "A", "type": "LLM", "config": {"prompt": "Start"}},
-            {"id": "B", "type": "TOOL", "config": {"tool_name": "Calculator"}},
-            {"id": "C", "type": "LLM", "config": {"prompt": "Summarize {{ B }}"}},
-        ],
-        "edges": [
-            {"source": "A", "target": "B"},
-            {"source": "B", "target": "C"},
-        ],
+        "topology": {
+            "nodes": [
+                {
+                    "id": "A",
+                    "type": "agent",
+                    "agent_name": "StartAgent",
+                    "visual": {"x_y_coordinates": [0,0], "label": "A", "icon": "box"}
+                },
+                {
+                    "id": "B",
+                    "type": "logic",
+                    "code": "Calculator",
+                    "visual": {"x_y_coordinates": [0,0], "label": "B", "icon": "box"}
+                },
+                {
+                    "id": "C",
+                    "type": "agent",
+                    "agent_name": "EndAgent",
+                    "visual": {"x_y_coordinates": [0,0], "label": "C", "icon": "box"}
+                },
+            ],
+            "edges": [
+                {"source_node_id": "A", "target_node_id": "B"},
+                {"source_node_id": "B", "target_node_id": "C"},
+            ],
+        },
+        "interface": {"inputs": {}, "outputs": {}},
+        "state": {"schema": {}},
+        "parameters": {}
     }
     inputs = {"trace_id": "t"}
     user_context = {
