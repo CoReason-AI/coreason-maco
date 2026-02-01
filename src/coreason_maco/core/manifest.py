@@ -1,18 +1,15 @@
-from coreason_manifest.recipes import RecipeManifest
+from coreason_manifest.definitions.agent import AgentDefinition, AgentRuntimeConfig
 from coreason_manifest.definitions.topology import (
-    Node,
     AgentNode,
+    CouncilConfig,
+    Edge,
+    GraphTopology,
     HumanNode,
     LogicNode,
-    GraphTopology,
-    Edge,
-    CouncilConfig,
-    VisualMetadata
+    Node,
+    VisualMetadata,
 )
-from coreason_manifest.definitions.agent import (
-    AgentDefinition,
-    AgentRuntimeConfig
-)
+from coreason_manifest.recipes import RecipeManifest
 
 __all__ = [
     "RecipeManifest",
@@ -25,5 +22,5 @@ __all__ = [
     "Edge",
     "AgentDefinition",
     "AgentRuntimeConfig",
-    "VisualMetadata"
+    "VisualMetadata",
 ]

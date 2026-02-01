@@ -170,10 +170,10 @@ class CouncilNodeHandler:
             valid_keys = CouncilConfig.model_fields.keys()
             filtered_config = {k: v for k, v in c_config.items() if k in valid_keys}
             if not filtered_config and council_config_obj and isinstance(council_config_obj, dict):
-                 # Maybe council_config is a dict inside config?
-                 council_config = CouncilConfig(**council_config_obj)
+                # Maybe council_config is a dict inside config?
+                council_config = CouncilConfig(**council_config_obj)
             else:
-                 council_config = CouncilConfig(**filtered_config)
+                council_config = CouncilConfig(**filtered_config)
 
         if not self.agent_executor:
             raise ValueError("AgentExecutor is required for Council nodes but was not provided.")
@@ -243,9 +243,7 @@ class LLMNodeHandler:
         if config.get("council_config"):
             # Delegate to CouncilNodeHandler
             council_handler = CouncilNodeHandler(self.agent_executor)
-            return await council_handler.execute(
-                node_id, run_id, config, context, queue, node_attributes
-            )
+            return await council_handler.execute(node_id, run_id, config, context, queue, node_attributes)
 
         model_config = config.copy()
         # Assuming 'prompt' or 'input' is in config, fallback to args

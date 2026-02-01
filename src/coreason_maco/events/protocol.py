@@ -1,15 +1,15 @@
 from coreason_manifest.definitions.events import (
-    GraphEvent,
-    NodeInit,
-    NodeStarted,
-    NodeCompleted,
-    NodeSkipped,
-    NodeStream,
-    NodeRestored,
-    EdgeTraversed,
     ArtifactGenerated,
     CouncilVote,
-    WorkflowError
+    EdgeTraversed,
+    GraphEvent,
+    NodeCompleted,
+    NodeInit,
+    NodeRestored,
+    NodeSkipped,
+    NodeStarted,
+    NodeStream,
+    WorkflowError,
 )
 
 from coreason_maco.utils.context import ExecutionContext, FeedbackManager

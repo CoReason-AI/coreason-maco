@@ -16,7 +16,7 @@ def test_invalid_manifest_structure() -> None:
         # "topology": ... <-- Missing
         "interface": {},
         "state": {},
-        "parameters": {}
+        "parameters": {},
     }
     inputs: Dict[str, Any] = {"trace_id": "t"}
     user_context = {
@@ -41,13 +41,18 @@ def test_missing_inputs() -> None:
         "name": "Valid Manifest",
         "topology": {
             "nodes": [
-                {"id": "A", "type": "agent", "agent_name": "A", "visual": {"x_y_coordinates": [0,0], "label": "A", "icon": "box"}}
+                {
+                    "id": "A",
+                    "type": "agent",
+                    "agent_name": "A",
+                    "visual": {"x_y_coordinates": [0, 0], "label": "A", "icon": "box"},
+                }
             ],
             "edges": [],
         },
         "interface": {"inputs": {}, "outputs": {}},
         "state": {"schema": {}},
-        "parameters": {}
+        "parameters": {},
     }
     inputs: Dict[str, Any] = {
         # Missing trace_id
@@ -78,7 +83,7 @@ def test_empty_execution() -> None:
         },
         "interface": {"inputs": {}, "outputs": {}},
         "state": {"schema": {}},
-        "parameters": {}
+        "parameters": {},
     }
     inputs = {"trace_id": "t"}
     user_context = {

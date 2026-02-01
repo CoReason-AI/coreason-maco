@@ -125,18 +125,18 @@ async def test_runner_executes_council_node(mock_user_context: UserContext) -> N
                     "id": "council_node",
                     "type": "agent",  # Use agent type
                     "agent_name": "Chairperson",
-                    "visual": {"x_y_coordinates": [0,0], "label": "Council", "icon": "users"},
+                    "visual": {"x_y_coordinates": [0, 0], "label": "Council", "icon": "users"},
                     "council_config": {
-                        "strategy": "consensus", # strategy required
-                        "voters": ["gpt-4", "claude"] # voters required
-                    }
+                        "strategy": "consensus",  # strategy required
+                        "voters": ["gpt-4", "claude"],  # voters required
+                    },
                 },
             ],
             "edges": [],
         },
         "interface": {"inputs": {}, "outputs": {}},
         "state": {"schema": {}},
-        "parameters": {}
+        "parameters": {},
     }
 
     inputs = {"trace_id": "t"}

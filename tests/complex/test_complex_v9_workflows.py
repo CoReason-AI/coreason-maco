@@ -1,4 +1,3 @@
-import asyncio
 from typing import Any, Dict, List
 from unittest.mock import MagicMock
 
@@ -17,7 +16,7 @@ class MockComplexAgentExecutor(AgentExecutor):
 
         content = f"Response from {name}"
 
-        if "Original Query:" in prompt: # Synthesis
+        if "Original Query:" in prompt:  # Synthesis
             content = "Consensus Reached"
 
         response = MagicMock()
@@ -39,10 +38,11 @@ class MockComplexRegistry(ServiceRegistry):
         self._agent = MockComplexAgentExecutor()
         self._tool = MockComplexToolExecutor()
         self._audit = MagicMock()
-        self._audit.log_workflow_execution = MagicMock() # Needs to be awaitable? No, protocol is async def
+        self._audit.log_workflow_execution = MagicMock()  # Needs to be awaitable? No, protocol is async def
 
         async def log(*args: Any, **kwargs: Any) -> None:
             pass
+
         self._audit.log_workflow_execution.side_effect = log
 
     @property
@@ -77,30 +77,27 @@ async def test_complex_v9_workflow(mock_user_context: UserContext) -> None:
                     "id": "Start",
                     "type": "agent",
                     "agent_name": "Initiator",
-                    "visual": {"x_y_coordinates": [0,0], "label": "Start", "icon": "box"}
+                    "visual": {"x_y_coordinates": [0, 0], "label": "Start", "icon": "box"},
                 },
                 {
                     "id": "Process",
                     "type": "logic",
                     "code": "DataProcessor",
-                    "visual": {"x_y_coordinates": [0,0], "label": "Logic", "icon": "code"}
+                    "visual": {"x_y_coordinates": [0, 0], "label": "Logic", "icon": "code"},
                 },
                 {
                     "id": "ReviewCouncil",
                     "type": "agent",
                     "agent_name": "Chair",
-                    "council_config": {
-                        "voters": ["VoterA", "VoterB"],
-                        "strategy": "consensus"
-                    },
-                    "visual": {"x_y_coordinates": [0,0], "label": "Council", "icon": "users"}
+                    "council_config": {"voters": ["VoterA", "VoterB"], "strategy": "consensus"},
+                    "visual": {"x_y_coordinates": [0, 0], "label": "Council", "icon": "users"},
                 },
                 {
                     "id": "End",
                     "type": "agent",
                     "agent_name": "Finalizer",
-                    "visual": {"x_y_coordinates": [0,0], "label": "End", "icon": "flag"}
-                }
+                    "visual": {"x_y_coordinates": [0, 0], "label": "End", "icon": "flag"},
+                },
             ],
             "edges": [
                 {"source_node_id": "Start", "target_node_id": "Process"},
@@ -110,7 +107,7 @@ async def test_complex_v9_workflow(mock_user_context: UserContext) -> None:
         },
         "interface": {"inputs": {}, "outputs": {}},
         "state": {"schema": {}},
-        "parameters": {}
+        "parameters": {},
     }
     inputs = {"trace_id": "t"}
 

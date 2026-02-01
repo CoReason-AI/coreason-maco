@@ -17,19 +17,19 @@ def test_complex_workflow_execution() -> None:
                     "id": "A",
                     "type": "agent",
                     "agent_name": "StartAgent",
-                    "visual": {"x_y_coordinates": [0,0], "label": "A", "icon": "box"}
+                    "visual": {"x_y_coordinates": [0, 0], "label": "A", "icon": "box"},
                 },
                 {
                     "id": "B",
                     "type": "logic",
                     "code": "Calculator",
-                    "visual": {"x_y_coordinates": [0,0], "label": "B", "icon": "box"}
+                    "visual": {"x_y_coordinates": [0, 0], "label": "B", "icon": "box"},
                 },
                 {
                     "id": "C",
                     "type": "agent",
                     "agent_name": "EndAgent",
-                    "visual": {"x_y_coordinates": [0,0], "label": "C", "icon": "box"}
+                    "visual": {"x_y_coordinates": [0, 0], "label": "C", "icon": "box"},
                 },
             ],
             "edges": [
@@ -39,7 +39,7 @@ def test_complex_workflow_execution() -> None:
         },
         "interface": {"inputs": {}, "outputs": {}},
         "state": {"schema": {}},
-        "parameters": {}
+        "parameters": {},
     }
     inputs = {"trace_id": "t"}
     user_context = {

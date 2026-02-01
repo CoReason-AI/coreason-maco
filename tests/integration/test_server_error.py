@@ -14,13 +14,18 @@ def test_execute_workflow_error() -> None:
         "name": "Error Workflow",
         "topology": {
             "nodes": [
-                {"id": "A", "type": "agent", "agent_name": "A", "visual": {"x_y_coordinates": [0,0], "label": "A", "icon": "box"}}
+                {
+                    "id": "A",
+                    "type": "agent",
+                    "agent_name": "A",
+                    "visual": {"x_y_coordinates": [0, 0], "label": "A", "icon": "box"},
+                }
             ],
             "edges": [],
         },
         "interface": {"inputs": {}, "outputs": {}},
         "state": {"schema": {}},
-        "parameters": {}
+        "parameters": {},
     }
     # Inputs that cause a validation error or similar to trigger the exception block
     inputs: Dict[str, Any] = {

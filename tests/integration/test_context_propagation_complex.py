@@ -80,14 +80,24 @@ async def test_propagation_sequential_workflow(mock_user_context: UserContext) -
         "name": "Sequential",
         "topology": {
             "nodes": [
-                {"id": "A", "type": "logic", "code": "ToolA", "visual": {"x_y_coordinates": [0,0], "label": "A", "icon": "box"}},
-                {"id": "B", "type": "logic", "code": "ToolB", "visual": {"x_y_coordinates": [0,0], "label": "B", "icon": "box"}},
+                {
+                    "id": "A",
+                    "type": "logic",
+                    "code": "ToolA",
+                    "visual": {"x_y_coordinates": [0, 0], "label": "A", "icon": "box"},
+                },
+                {
+                    "id": "B",
+                    "type": "logic",
+                    "code": "ToolB",
+                    "visual": {"x_y_coordinates": [0, 0], "label": "B", "icon": "box"},
+                },
             ],
             "edges": [{"source_node_id": "A", "target_node_id": "B"}],
         },
         "interface": {"inputs": {}, "outputs": {}},
         "state": {"schema": {}},
-        "parameters": {}
+        "parameters": {},
     }
     inputs = {"trace_id": "t"}
 
@@ -112,9 +122,24 @@ async def test_propagation_parallel_branching(mock_user_context: UserContext) ->
         "name": "Parallel",
         "topology": {
             "nodes": [
-                {"id": "Start", "type": "logic", "code": "StartTool", "visual": {"x_y_coordinates": [0,0], "label": "S", "icon": "box"}},
-                {"id": "Branch1", "type": "logic", "code": "Tool1", "visual": {"x_y_coordinates": [0,0], "label": "B1", "icon": "box"}},
-                {"id": "Branch2", "type": "logic", "code": "Tool2", "visual": {"x_y_coordinates": [0,0], "label": "B2", "icon": "box"}},
+                {
+                    "id": "Start",
+                    "type": "logic",
+                    "code": "StartTool",
+                    "visual": {"x_y_coordinates": [0, 0], "label": "S", "icon": "box"},
+                },
+                {
+                    "id": "Branch1",
+                    "type": "logic",
+                    "code": "Tool1",
+                    "visual": {"x_y_coordinates": [0, 0], "label": "B1", "icon": "box"},
+                },
+                {
+                    "id": "Branch2",
+                    "type": "logic",
+                    "code": "Tool2",
+                    "visual": {"x_y_coordinates": [0, 0], "label": "B2", "icon": "box"},
+                },
             ],
             "edges": [
                 {"source_node_id": "Start", "target_node_id": "Branch1"},
@@ -123,7 +148,7 @@ async def test_propagation_parallel_branching(mock_user_context: UserContext) ->
         },
         "interface": {"inputs": {}, "outputs": {}},
         "state": {"schema": {}},
-        "parameters": {}
+        "parameters": {},
     }
     inputs = {"trace_id": "t"}
 
@@ -148,12 +173,19 @@ async def test_propagation_missing_context() -> None:
         "version": "1.0.0",
         "name": "None Context",
         "topology": {
-            "nodes": [{"id": "A", "type": "logic", "code": "ToolA", "visual": {"x_y_coordinates": [0,0], "label": "A", "icon": "box"}}],
+            "nodes": [
+                {
+                    "id": "A",
+                    "type": "logic",
+                    "code": "ToolA",
+                    "visual": {"x_y_coordinates": [0, 0], "label": "A", "icon": "box"},
+                }
+            ],
             "edges": [],
         },
         "interface": {"inputs": {}, "outputs": {}},
         "state": {"schema": {}},
-        "parameters": {}
+        "parameters": {},
     }
     inputs = {"trace_id": "t"}
 

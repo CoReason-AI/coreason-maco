@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 import pytest
 from coreason_manifest.recipes import RecipeManifest
@@ -16,7 +16,7 @@ def test_manifest_missing_topology() -> None:
         "name": "Missing Topology",
         "interface": {"inputs": {}, "outputs": {}},
         "state": {"schema": {}},
-        "parameters": {}
+        "parameters": {},
         # "topology" missing
     }
     with pytest.raises(ValidationError) as exc:
@@ -30,15 +30,10 @@ def test_manifest_invalid_node_type() -> None:
         "id": "invalid-node",
         "version": "1.0.0",
         "name": "Invalid Node",
-        "topology": {
-            "nodes": [
-                {"id": "A", "type": "INVALID_TYPE", "visual": {}}
-            ],
-            "edges": []
-        },
+        "topology": {"nodes": [{"id": "A", "type": "INVALID_TYPE", "visual": {}}], "edges": []},
         "interface": {"inputs": {}, "outputs": {}},
         "state": {"schema": {}},
-        "parameters": {}
+        "parameters": {},
     }
     with pytest.raises(ValidationError) as exc:
         RecipeManifest(**data)
@@ -65,14 +60,14 @@ async def test_agent_node_config_extraction_edge_case(mock_user_context: Any) ->
                     "id": "A",
                     "type": "agent",
                     "agent_name": "Writer",
-                    "visual": {"x_y_coordinates": [0,0], "label": "A", "icon": "box"}
+                    "visual": {"x_y_coordinates": [0, 0], "label": "A", "icon": "box"},
                 }
             ],
-            "edges": []
+            "edges": [],
         },
         "interface": {"inputs": {}, "outputs": {}},
         "state": {"schema": {}},
-        "parameters": {}
+        "parameters": {},
     }
     inputs = {"trace_id": "t"}
 
@@ -102,14 +97,14 @@ async def test_logic_node_execution(mock_user_context: Any) -> None:
                     "id": "LogicA",
                     "type": "logic",
                     "code": "SomeTool",
-                    "visual": {"x_y_coordinates": [0,0], "label": "L", "icon": "code"}
+                    "visual": {"x_y_coordinates": [0, 0], "label": "L", "icon": "code"},
                 }
             ],
-            "edges": []
+            "edges": [],
         },
         "interface": {"inputs": {}, "outputs": {}},
         "state": {"schema": {}},
-        "parameters": {}
+        "parameters": {},
     }
     inputs = {"trace_id": "t"}
 

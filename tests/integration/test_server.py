@@ -22,14 +22,14 @@ def test_execute_workflow() -> None:
                     "id": "A",
                     "type": "agent",
                     "agent_name": "Writer",
-                    "visual": {"x_y_coordinates": [0, 0], "label": "A", "icon": "box"}
+                    "visual": {"x_y_coordinates": [0, 0], "label": "A", "icon": "box"},
                 }
             ],
-            "edges": []
+            "edges": [],
         },
         "interface": {"inputs": {}, "outputs": {}},
         "state": {"schema": {}},
-        "parameters": {}
+        "parameters": {},
     }
     inputs = {"trace_id": "test_trace"}
     user_context = {

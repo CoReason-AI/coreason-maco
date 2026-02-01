@@ -75,12 +75,19 @@ async def test_controller_passes_resume_snapshot(mock_user_context: UserContext)
         "version": "1.0.0",
         "name": "Resume Test",
         "topology": {
-            "nodes": [{"id": "A", "type": "agent", "agent_name": "A", "visual": {"x_y_coordinates": [0,0], "label": "A", "icon": "box"}}],
+            "nodes": [
+                {
+                    "id": "A",
+                    "type": "agent",
+                    "agent_name": "A",
+                    "visual": {"x_y_coordinates": [0, 0], "label": "A", "icon": "box"},
+                }
+            ],
             "edges": [],
         },
         "interface": {"inputs": {}, "outputs": {}},
         "state": {"schema": {}},
-        "parameters": {}
+        "parameters": {},
     }
 
     inputs = {

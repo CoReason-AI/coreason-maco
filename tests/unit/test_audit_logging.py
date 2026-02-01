@@ -38,13 +38,18 @@ async def test_audit_logging_integration(mock_user_context: UserContext) -> None
         "name": "Test Workflow",
         "topology": {
             "nodes": [
-                {"id": "node1", "type": "agent", "agent_name": "A", "visual": {"x_y_coordinates": [0,0], "label": "A", "icon": "box"}}
+                {
+                    "id": "node1",
+                    "type": "agent",
+                    "agent_name": "A",
+                    "visual": {"x_y_coordinates": [0, 0], "label": "A", "icon": "box"},
+                }
             ],
             "edges": [],
         },
         "interface": {"inputs": {}, "outputs": {}},
         "state": {"schema": {}},
-        "parameters": {}
+        "parameters": {},
     }
     inputs = {"trace_id": "trace456"}
 

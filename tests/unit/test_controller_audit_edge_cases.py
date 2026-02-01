@@ -75,13 +75,10 @@ async def test_input_sanitization_complex(mock_user_context: UserContext) -> Non
         "id": "test-id",
         "version": "1.0.0",
         "name": "Test",
-        "topology": {
-            "nodes": [],
-            "edges": []
-        },
+        "topology": {"nodes": [], "edges": []},
         "interface": {"inputs": {}, "outputs": {}},
         "state": {"schema": {}},
-        "parameters": {}
+        "parameters": {},
     }
 
     async for _ in controller.execute_recipe(manifest, inputs, context=mock_user_context):
@@ -132,13 +129,10 @@ async def test_audit_logging_on_workflow_failure(mock_user_context: UserContext)
         "id": "test-id",
         "version": "1.0.0",
         "name": "Crash Test",
-        "topology": {
-            "nodes": [],
-            "edges": []
-        },
+        "topology": {"nodes": [], "edges": []},
         "interface": {"inputs": {}, "outputs": {}},
         "state": {"schema": {}},
-        "parameters": {}
+        "parameters": {},
     }
     inputs = {"trace_id": "t"}
 

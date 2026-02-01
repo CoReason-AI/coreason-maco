@@ -8,10 +8,11 @@
 #
 # Source Code: https://github.com/CoReason-AI/coreason_maco
 
-from typing import List, Any
+from typing import List
+
 import pytest
 
-from coreason_maco.core.manifest import AgentNode, Edge, RecipeManifest, VisualMetadata, Node
+from coreason_maco.core.manifest import AgentNode, Edge, Node, RecipeManifest, VisualMetadata
 from coreason_maco.engine.topology import CyclicDependencyError, GraphIntegrityError, TopologyEngine
 
 
@@ -33,7 +34,7 @@ def create_manifest(nodes: List[Node], edges: List[Edge], name: str = "Test") ->
         topology={"nodes": nodes, "edges": edges},
         interface={"inputs": {}, "outputs": {}},
         state={"schema": {}},
-        parameters={}
+        parameters={},
     )
 
 
@@ -42,7 +43,7 @@ def test_build_simple_linear_graph(topology_engine: TopologyEngine) -> None:
         name="Linear",
         nodes=[
             AgentNode(id="A", type="agent", agent_name="AgentA", visual=create_visual()),
-            AgentNode(id="B", type="agent", agent_name="AgentB", visual=create_visual())
+            AgentNode(id="B", type="agent", agent_name="AgentB", visual=create_visual()),
         ],
         edges=[Edge(source_node_id="A", target_node_id="B")],
     )
@@ -87,11 +88,11 @@ def test_build_conditional_graph(topology_engine: TopologyEngine) -> None:
         nodes=[
             AgentNode(id="A", type="agent", agent_name="AgentA", visual=create_visual()),
             AgentNode(id="B", type="agent", agent_name="AgentB", visual=create_visual()),
-            AgentNode(id="C", type="agent", agent_name="AgentC", visual=create_visual())
+            AgentNode(id="C", type="agent", agent_name="AgentC", visual=create_visual()),
         ],
         edges=[
             Edge(source_node_id="A", target_node_id="B", condition="yes"),
-            Edge(source_node_id="A", target_node_id="C", condition="no")
+            Edge(source_node_id="A", target_node_id="C", condition="no"),
         ],
     )
 
@@ -109,9 +110,9 @@ def test_build_disconnected_graph_raises_error(topology_engine: TopologyEngine) 
         name="Disconnected",
         nodes=[
             AgentNode(id="A", type="agent", agent_name="AgentA", visual=create_visual()),
-            AgentNode(id="B", type="agent", agent_name="AgentB", visual=create_visual())
+            AgentNode(id="B", type="agent", agent_name="AgentB", visual=create_visual()),
         ],
-        edges=[]
+        edges=[],
     )
 
     with pytest.raises(GraphIntegrityError):
@@ -123,12 +124,9 @@ def test_build_cyclic_graph_raises_error(topology_engine: TopologyEngine) -> Non
         name="Cyclic",
         nodes=[
             AgentNode(id="A", type="agent", agent_name="AgentA", visual=create_visual()),
-            AgentNode(id="B", type="agent", agent_name="AgentB", visual=create_visual())
+            AgentNode(id="B", type="agent", agent_name="AgentB", visual=create_visual()),
         ],
-        edges=[
-            Edge(source_node_id="A", target_node_id="B"),
-            Edge(source_node_id="B", target_node_id="A")
-        ],
+        edges=[Edge(source_node_id="A", target_node_id="B"), Edge(source_node_id="B", target_node_id="A")],
     )
 
     with pytest.raises(CyclicDependencyError):
@@ -138,9 +136,7 @@ def test_build_cyclic_graph_raises_error(topology_engine: TopologyEngine) -> Non
 def test_node_config_preserved(topology_engine: TopologyEngine) -> None:
     # Use AgentNode and verify agent_name is preserved in config
     manifest = create_manifest(
-        name="Config",
-        nodes=[AgentNode(id="A", type="agent", agent_name="GPT-4", visual=create_visual())],
-        edges=[]
+        name="Config", nodes=[AgentNode(id="A", type="agent", agent_name="GPT-4", visual=create_visual())], edges=[]
     )
 
     graph = topology_engine.build_graph(manifest)

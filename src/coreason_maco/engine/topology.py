@@ -8,11 +8,11 @@
 #
 # Source Code: https://github.com/CoReason-AI/coreason_maco
 
-from typing import List, Any, Dict
+from typing import Any, Dict, List
 
 import networkx as nx
 
-from coreason_maco.core.manifest import RecipeManifest, AgentNode, HumanNode
+from coreason_maco.core.manifest import AgentNode, HumanNode, RecipeManifest
 
 
 class CyclicDependencyError(Exception):
@@ -54,17 +54,17 @@ class TopologyEngine:
 
             config: Dict[str, Any] = {}
             if isinstance(node, AgentNode):
-                 # AgentNode has agent_name. Pass it in config.
-                 config = node.model_dump(exclude={"id", "type", "visual"}, exclude_unset=True)
-                 # Ensure council_config is accessible if present (it's in the dump, but let's be explicit if needed)
+                # AgentNode has agent_name. Pass it in config.
+                config = node.model_dump(exclude={"id", "type", "visual"}, exclude_unset=True)
+                # Ensure council_config is accessible if present (it's in the dump, but let's be explicit if needed)
             elif isinstance(node, HumanNode):
-                 config = node.model_dump(exclude={"id", "type", "visual"}, exclude_unset=True)
+                config = node.model_dump(exclude={"id", "type", "visual"}, exclude_unset=True)
             else:
-                 # Fallback for other nodes: use .config if available or dump
-                 if hasattr(node, "config"):
-                     config = node.config
-                 else:
-                     config = node.model_dump(exclude={"id", "type", "visual"}, exclude_unset=True)
+                # Fallback for other nodes: use .config if available or dump
+                if hasattr(node, "config"):
+                    config = node.config
+                else:
+                    config = node.model_dump(exclude={"id", "type", "visual"}, exclude_unset=True)
 
             graph.add_node(node.id, type=node.type, config=config)
 

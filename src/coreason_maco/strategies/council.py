@@ -9,10 +9,10 @@
 # Source Code: https://github.com/CoReason-AI/coreason_maco
 
 import asyncio
-from typing import Any, Dict, List
+from typing import Dict, List
 
 from coreason_identity.models import UserContext
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict
 
 from coreason_maco.core.interfaces import AgentExecutor
 from coreason_maco.core.manifest import CouncilConfig
@@ -102,7 +102,7 @@ class CouncilStrategy:
         )
 
         # Use a default synthesizer configuration
-        synthesizer_config = {"role": "synthesizer", "model": "judge"} # "judge" matches test expectations usually
+        synthesizer_config = {"role": "synthesizer", "model": "judge"}  # "judge" matches test expectations usually
 
         try:
             final_response = await asyncio.wait_for(

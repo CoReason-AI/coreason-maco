@@ -109,15 +109,15 @@ async def test_council_node_invalid_config(mock_user_context: UserContext) -> No
                     "id": "bad_node",
                     "type": "agent",
                     "agent_name": "A",
-                    "visual": {"x_y_coordinates": [0,0], "label": "A", "icon": "box"},
-                    "council_config": {"strategy": "consensus"} # Missing voters
+                    "visual": {"x_y_coordinates": [0, 0], "label": "A", "icon": "box"},
+                    "council_config": {"strategy": "consensus"},  # Missing voters
                 },
             ],
             "edges": [],
         },
         "interface": {"inputs": {}, "outputs": {}},
         "state": {"schema": {}},
-        "parameters": {}
+        "parameters": {},
     }
     inputs = {"trace_id": "t"}
 
@@ -148,18 +148,15 @@ async def test_council_node_execution_failure(mock_user_context: UserContext) ->
                     "id": "fail_node",
                     "type": "agent",
                     "agent_name": "Chair",
-                    "visual": {"x_y_coordinates": [0,0], "label": "A", "icon": "box"},
-                    "council_config": {
-                        "strategy": "consensus",
-                        "voters": ["gpt-4"]
-                    },
+                    "visual": {"x_y_coordinates": [0, 0], "label": "A", "icon": "box"},
+                    "council_config": {"strategy": "consensus", "voters": ["gpt-4"]},
                 },
             ],
             "edges": [],
         },
         "interface": {"inputs": {}, "outputs": {}},
         "state": {"schema": {}},
-        "parameters": {}
+        "parameters": {},
     }
     inputs = {"trace_id": "t"}
 
@@ -186,19 +183,24 @@ async def test_parallel_council_nodes(mock_user_context: UserContext) -> None:
         "name": "Parallel Councils",
         "topology": {
             "nodes": [
-                {"id": "Start", "type": "agent", "agent_name": "S", "visual": {"x_y_coordinates": [0,0], "label": "A", "icon": "box"}}, # Use agent as dummy start
+                {
+                    "id": "Start",
+                    "type": "agent",
+                    "agent_name": "S",
+                    "visual": {"x_y_coordinates": [0, 0], "label": "A", "icon": "box"},
+                },  # Use agent as dummy start
                 {
                     "id": "Council_A",
                     "type": "agent",
                     "agent_name": "A",
-                    "visual": {"x_y_coordinates": [0,0], "label": "A", "icon": "box"},
+                    "visual": {"x_y_coordinates": [0, 0], "label": "A", "icon": "box"},
                     "council_config": {"voters": ["gpt-4"], "strategy": "consensus"},
                 },
                 {
                     "id": "Council_B",
                     "type": "agent",
                     "agent_name": "B",
-                    "visual": {"x_y_coordinates": [0,0], "label": "B", "icon": "box"},
+                    "visual": {"x_y_coordinates": [0, 0], "label": "B", "icon": "box"},
                     "council_config": {"voters": ["claude"], "strategy": "consensus"},
                 },
             ],
@@ -209,7 +211,7 @@ async def test_parallel_council_nodes(mock_user_context: UserContext) -> None:
         },
         "interface": {"inputs": {}, "outputs": {}},
         "state": {"schema": {}},
-        "parameters": {}
+        "parameters": {},
     }
     inputs = {"trace_id": "t"}
 
@@ -238,6 +240,7 @@ async def test_parallel_council_nodes(mock_user_context: UserContext) -> None:
 @pytest.mark.asyncio  # type: ignore
 async def test_council_node_missing_executor(mock_user_context: UserContext) -> None:
     """Test that missing agent_executor raises ValueError for Council node."""
+
     # Custom registry that returns None
     class NoneExecutorRegistry(ServiceRegistry):
         @property
@@ -271,7 +274,7 @@ async def test_council_node_missing_executor(mock_user_context: UserContext) -> 
                     "id": "node",
                     "type": "agent",
                     "agent_name": "A",
-                    "visual": {"x_y_coordinates": [0,0], "label": "A", "icon": "box"},
+                    "visual": {"x_y_coordinates": [0, 0], "label": "A", "icon": "box"},
                     "council_config": {"voters": ["gpt-4"], "strategy": "consensus"},
                 },
             ],
@@ -279,7 +282,7 @@ async def test_council_node_missing_executor(mock_user_context: UserContext) -> 
         },
         "interface": {"inputs": {}, "outputs": {}},
         "state": {"schema": {}},
-        "parameters": {}
+        "parameters": {},
     }
     inputs = {"trace_id": "t"}
 
